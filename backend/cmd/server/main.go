@@ -29,12 +29,13 @@ func main() {
 	defer db.Close()
 	log.Println("connected to database")
 
-	// --- Repositories ---
+	// --- Repositories & Services ---
 	currencyRepo := currency.NewRepository(db)
+	currencyService := currency.NewService(currencyRepo)
 
 	srv := &http.Server{
 		Addr:           cfg.HTTPAddr,
-		Handler:        api.New(db, currencyRepo),
+		Handler:        api.New(db, currencyService),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

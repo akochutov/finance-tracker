@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -11,6 +12,13 @@ import (
 
 type listCurrenciesResponse struct {
 	Currencies []currency.Currency `json:"currencies"`
+}
+
+type createCurrencyRequest struct {
+	Code          string `json:"code"`
+	Name          string `json:"name"`
+	Kind          string `json:"kind"`
+	DecimalPlaces int    `json:"decimal_places"`
 }
 
 func (s *Server) handleListCurrencies() http.HandlerFunc {
@@ -45,5 +53,39 @@ func (s *Server) handleGetCurrency() http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, cur)
+	}
+}
+
+func (s *Server) handleCreateCurrency() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req createCurrencyRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+
+		cur := currency.Currency{
+			Code:          req.Code,
+			Name:          req.Name,
+			Kind:          req.Kind,
+			DecimalPlaces: req.DecimalPlaces,
+		}
+
+		created, err := s.currencies.Create(r.Context(), cur)
+		if err != nil {
+			if errors.Is(err, currency.ErrInvalidInput) {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			if errors.Is(err, currency.ErrAlreadyExists) {
+				writeError(w, http.StatusConflict, err.Error())
+				return
+			}
+			log.Printf("internal error: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, created)
 	}
 }
