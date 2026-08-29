@@ -1,0 +1,16 @@
+# Secrets and environments
+deployment/env/*.env
+
+# GoLang artefacts
+/backend/server
+*.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS dependent & IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db 

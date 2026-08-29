@@ -1,0 +1,34 @@
+services:
+  db-prod:
+    image: postgres:18
+    env_file:
+      - ./env/prod.env
+    command: ["postgres", "-c", "timezone=UTC"]
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-prod:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  db-dev:
+    image: postgres:18
+    env_file:
+      - ./env/dev.env
+    command: ["postgres", "-c", "timezone=UTC"]
+    ports:
+      - "6666:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata-prod:
+  pgdata-dev:
