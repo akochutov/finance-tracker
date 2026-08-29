@@ -30,6 +30,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/currencies", s.handleListCurrencies())
 	s.mux.HandleFunc("GET /api/currencies/{code}", s.handleGetCurrency())
 	s.mux.HandleFunc("POST /api/currencies", s.handleCreateCurrency())
+	s.mux.HandleFunc("DELETE /api/currencies/{code}", s.handleDeactivateCurrency())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

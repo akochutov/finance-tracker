@@ -89,3 +89,26 @@ func (s *Server) handleCreateCurrency() http.HandlerFunc {
 		writeJSON(w, http.StatusCreated, created)
 	}
 }
+
+func (s *Server) handleDeactivateCurrency() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := strings.ToUpper(strings.TrimSpace(r.PathValue("code")))
+
+		err := s.currencies.Deactivate(r.Context(), code)
+		if err != nil {
+			if errors.Is(err, currency.ErrInvalidInput) {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			if errors.Is(err, currency.ErrNotFound) {
+				writeError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			log.Printf("internal error: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

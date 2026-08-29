@@ -44,6 +44,14 @@ func (s *Service) Create(ctx context.Context, c Currency) (Currency, error) {
 	return out, nil
 }
 
+func (s *Service) Deactivate(ctx context.Context, code string) error {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	if code == "" {
+		return fmt.Errorf("%w: code is empty", ErrInvalidInput)
+	}
+	return s.repo.Deactivate(ctx, code)
+}
+
 func validate(c Currency) error {
 	if c.Code == "" {
 		return fmt.Errorf("%w: code is empty", ErrInvalidInput)

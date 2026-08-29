@@ -91,3 +91,17 @@ func (r *Repository) Create(ctx context.Context, c Currency) (Currency, error) {
 
 	return out, nil
 }
+
+func (r *Repository) Deactivate(ctx context.Context, code string) error {
+	const q = `UPDATE currencies SET is_active = false WHERE code = $1`
+
+	tag, err := r.db.Exec(ctx, q, code)
+	if err != nil {
+		return fmt.Errorf("deactivate currency: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
