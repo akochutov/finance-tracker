@@ -5,16 +5,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Server struct {
-	db  *pgxpool.Pool
-	mux *http.ServeMux
+	db         *pgxpool.Pool
+	mux        *http.ServeMux
+	currencies *currency.Repository
 }
 
-func New(db *pgxpool.Pool) *Server {
-	s := &Server{db: db, mux: http.NewServeMux()}
+func New(db *pgxpool.Pool, currencies *currency.Repository) *Server {
+	s := &Server{db: db, mux: http.NewServeMux(), currencies: currencies}
 	s.routes()
 	return s
 }
@@ -25,6 +27,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) routes() {
 	s.mux.HandleFunc("GET /healthz", s.handleHealthz())
+	s.mux.HandleFunc("GET /api/currencies", s.handleListCurrencies())
+	s.mux.HandleFunc("GET /api/currencies/{code}", s.handleGetCurrency())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
