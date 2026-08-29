@@ -44,6 +44,25 @@ func (s *Service) Create(ctx context.Context, c Currency) (Currency, error) {
 	return out, nil
 }
 
+func (s *Service) Update(ctx context.Context, code, name string, decimalPlaces int) (Currency, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return Currency{}, fmt.Errorf("%w: name is empty", ErrInvalidInput)
+	}
+
+	if decimalPlaces < 0 {
+		return Currency{}, fmt.Errorf("%w: decimal_places must not be negative", ErrInvalidInput)
+	}
+
+	updated, err := s.repo.Update(ctx, code, name, decimalPlaces)
+	if err != nil {
+		return Currency{}, err
+	}
+
+	return updated, nil
+}
+
 func (s *Service) Deactivate(ctx context.Context, code string) error {
 	code = strings.ToUpper(strings.TrimSpace(code))
 	if code == "" {

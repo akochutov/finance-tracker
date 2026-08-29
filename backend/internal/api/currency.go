@@ -21,6 +21,11 @@ type createCurrencyRequest struct {
 	DecimalPlaces int    `json:"decimal_places"`
 }
 
+type updateCurrencyRequest struct {
+	Name          *string `json:"name"`
+	DecimalPlaces *int    `json:"decimal_places"`
+}
+
 func (s *Server) handleListCurrencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.currencies.List(r.Context())
@@ -87,6 +92,40 @@ func (s *Server) handleCreateCurrency() http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusCreated, created)
+	}
+}
+
+func (s *Server) handleUpdateCurrency() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		code := strings.ToUpper(strings.TrimSpace(r.PathValue("code")))
+
+		var req updateCurrencyRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+
+		if req.Name == nil || req.DecimalPlaces == nil {
+			writeError(w, http.StatusBadRequest, "name and decimal_places are required")
+			return
+		}
+
+		updated, err := s.currencies.Update(r.Context(), code, *req.Name, *req.DecimalPlaces)
+		if err != nil {
+			if errors.Is(err, currency.ErrInvalidInput) {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			if errors.Is(err, currency.ErrNotFound) {
+				writeError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			log.Printf("internal error: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		writeJSON(w, http.StatusOK, updated)
 	}
 }
 

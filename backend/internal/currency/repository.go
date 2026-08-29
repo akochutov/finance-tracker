@@ -92,6 +92,27 @@ func (r *Repository) Create(ctx context.Context, c Currency) (Currency, error) {
 	return out, nil
 }
 
+func (r *Repository) Update(ctx context.Context, code, name string, decimalPlaces int) (Currency, error) {
+	const q = `
+		UPDATE currencies
+		SET name = $1, decimal_places = $2
+		WHERE code = $3
+		RETURNING code, name, kind, decimal_places, is_active, created_at, updated_at`
+
+	var out Currency
+	err := r.db.QueryRow(ctx, q, name, decimalPlaces, code).
+		Scan(&out.Code, &out.Name, &out.Kind, &out.DecimalPlaces, &out.IsActive, &out.CreatedAt, &out.UpdatedAt)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Currency{}, ErrNotFound
+		}
+		return Currency{}, fmt.Errorf("update currency: %w", err)
+	}
+
+	return out, nil
+}
+
 func (r *Repository) Deactivate(ctx context.Context, code string) error {
 	const q = `UPDATE currencies SET is_active = false WHERE code = $1`
 
