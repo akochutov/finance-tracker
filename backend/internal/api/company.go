@@ -36,6 +36,7 @@ func (s *Server) handleListCompanies() http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
+
 		writeJSON(w, http.StatusOK, listCompaniesResponse{Companies: list})
 	}
 }
