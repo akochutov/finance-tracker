@@ -7,22 +7,25 @@ import (
 
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Server struct {
-	db         *pgxpool.Pool
-	mux        *http.ServeMux
-	currencies *currency.Service
-	companies  *company.Service
+	db             *pgxpool.Pool
+	mux            *http.ServeMux
+	currencies     *currency.Service
+	companies      *company.Service
+	bankRequisites *requisite.Service
 }
 
-func New(db *pgxpool.Pool, currencies *currency.Service, companies *company.Service) *Server {
+func New(db *pgxpool.Pool, currencies *currency.Service, companies *company.Service, bankRequisites *requisite.Service) *Server {
 	s := &Server{
-		db:         db,
-		mux:        http.NewServeMux(),
-		currencies: currencies,
-		companies:  companies,
+		db:             db,
+		mux:            http.NewServeMux(),
+		currencies:     currencies,
+		companies:      companies,
+		bankRequisites: bankRequisites,
 	}
 	s.routes()
 	return s
@@ -46,6 +49,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/companies", s.handleCreateCompany())
 	s.mux.HandleFunc("PUT /api/companies/{id}", s.handleUpdateCompany())
 	s.mux.HandleFunc("DELETE /api/companies/{id}", s.handleDeactivateCompany())
+
+	s.mux.HandleFunc("GET /api/companies/{id}/bank-requisites", s.handleListBankRequisites())
+	s.mux.HandleFunc("POST /api/companies/{id}/bank-requisites", s.handleCreateBankRequisite())
+	s.mux.HandleFunc("POST /api/companies/{id}/bank-requisites/{rid}/close", s.handleCloseBankRequisite())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

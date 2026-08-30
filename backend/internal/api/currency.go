@@ -34,6 +34,7 @@ func (s *Server) handleListCurrencies() http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
+
 		writeJSON(w, http.StatusOK, listCurrenciesResponse{Currencies: list})
 	}
 }
