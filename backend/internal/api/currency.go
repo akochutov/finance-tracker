@@ -47,7 +47,7 @@ func (s *Server) handleGetCurrency() http.HandlerFunc {
 			return
 		}
 
-		cur, err := s.currencies.GetByCode(r.Context(), code)
+		result, err := s.currencies.GetByCode(r.Context(), code)
 		if err != nil {
 			if errors.Is(err, currency.ErrNotFound) {
 				writeError(w, http.StatusNotFound, "currency not found")
@@ -57,7 +57,8 @@ func (s *Server) handleGetCurrency() http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		writeJSON(w, http.StatusOK, cur)
+
+		writeJSON(w, http.StatusOK, result)
 	}
 }
 

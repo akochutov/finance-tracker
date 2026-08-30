@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/akochutov/finance-tracker/internal/api"
+	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/config"
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
@@ -33,9 +34,12 @@ func main() {
 	currencyRepo := currency.NewRepository(db)
 	currencyService := currency.NewService(currencyRepo)
 
+	companyRepo := company.NewRepository(db)
+	companyService := company.NewService(companyRepo)
+
 	srv := &http.Server{
 		Addr:           cfg.HTTPAddr,
-		Handler:        api.New(db, currencyService),
+		Handler:        api.New(db, currencyService, companyService),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -13,10 +14,16 @@ type Server struct {
 	db         *pgxpool.Pool
 	mux        *http.ServeMux
 	currencies *currency.Service
+	companies  *company.Service
 }
 
-func New(db *pgxpool.Pool, currencies *currency.Service) *Server {
-	s := &Server{db: db, mux: http.NewServeMux(), currencies: currencies}
+func New(db *pgxpool.Pool, currencies *currency.Service, companies *company.Service) *Server {
+	s := &Server{
+		db:         db,
+		mux:        http.NewServeMux(),
+		currencies: currencies,
+		companies:  companies,
+	}
 	s.routes()
 	return s
 }
@@ -27,11 +34,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) routes() {
 	s.mux.HandleFunc("GET /healthz", s.handleHealthz())
+
 	s.mux.HandleFunc("GET /api/currencies", s.handleListCurrencies())
 	s.mux.HandleFunc("GET /api/currencies/{code}", s.handleGetCurrency())
 	s.mux.HandleFunc("POST /api/currencies", s.handleCreateCurrency())
 	s.mux.HandleFunc("PUT /api/currencies/{code}", s.handleUpdateCurrency())
 	s.mux.HandleFunc("DELETE /api/currencies/{code}", s.handleDeactivateCurrency())
+
+	s.mux.HandleFunc("GET /api/companies", s.handleListCompanies())
+	s.mux.HandleFunc("GET /api/companies/{id}", s.handleGetCompany())
+	s.mux.HandleFunc("POST /api/companies", s.handleCreateCompany())
+	s.mux.HandleFunc("PUT /api/companies/{id}", s.handleUpdateCompany())
+	s.mux.HandleFunc("DELETE /api/companies/{id}", s.handleDeactivateCompany())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
