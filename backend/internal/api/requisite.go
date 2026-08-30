@@ -32,6 +32,20 @@ type closeBankRequisiteRequest struct {
 	ValidTo *time.Time `json:"valid_to"`
 }
 
+type listCryptoRequisitesResponse struct {
+	CryptoRequisites []requisite.CryptoRequisite `json:"crypto_requisites"`
+}
+
+type createCryptoRequisiteRequest struct {
+	Network       string     `json:"network"`
+	WalletAddress string     `json:"wallet_address"`
+	ValidFrom     *time.Time `json:"valid_from"`
+}
+
+type closeCryptoRequisiteRequest struct {
+	ValidTo *time.Time `json:"valid_to"`
+}
+
 func (s *Server) handleListBankRequisites() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		companyID, err := uuid.Parse(r.PathValue("id"))
@@ -116,6 +130,100 @@ func (s *Server) handleCloseBankRequisite() http.HandlerFunc {
 		}
 
 		if err := s.bankRequisites.Close(r.Context(), id, validTo); err != nil {
+			if errors.Is(err, requisite.ErrInvalidInput) {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			if errors.Is(err, requisite.ErrNotFound) {
+				writeError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			log.Printf("internal error: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (s *Server) handleListCryptoRequisites() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		companyID, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid id")
+			return
+		}
+
+		list, err := s.cryptoRequisites.ListByCompany(r.Context(), companyID)
+		if err != nil {
+			log.Printf("list crypto requisites: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		writeJSON(w, http.StatusOK, listCryptoRequisitesResponse{CryptoRequisites: list})
+	}
+}
+
+func (s *Server) handleCreateCryptoRequisite() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		companyID, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid id")
+			return
+		}
+
+		var req createCryptoRequisiteRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+
+		cr := requisite.CryptoRequisite{
+			CompanyID:     companyID,
+			Network:       req.Network,
+			WalletAddress: req.WalletAddress,
+		}
+		if req.ValidFrom != nil {
+			cr.ValidFrom = (*req.ValidFrom).UTC()
+		}
+
+		created, err := s.cryptoRequisites.Create(r.Context(), cr)
+		if err != nil {
+			if errors.Is(err, requisite.ErrInvalidInput) {
+				writeError(w, http.StatusBadRequest, err.Error())
+				return
+			}
+			log.Printf("internal error: %v", err)
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		writeJSON(w, http.StatusCreated, created)
+	}
+}
+
+func (s *Server) handleCloseCryptoRequisite() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.Parse(r.PathValue("rid"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid requisite_id")
+			return
+		}
+
+		var req closeCryptoRequisiteRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+
+		validTo := time.Now().UTC()
+		if req.ValidTo != nil {
+			validTo = (*req.ValidTo).UTC()
+		}
+
+		if err := s.cryptoRequisites.Close(r.Context(), id, validTo); err != nil {
 			if errors.Is(err, requisite.ErrInvalidInput) {
 				writeError(w, http.StatusBadRequest, err.Error())
 				return

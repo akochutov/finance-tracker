@@ -12,20 +12,28 @@ import (
 )
 
 type Server struct {
-	db             *pgxpool.Pool
-	mux            *http.ServeMux
-	currencies     *currency.Service
-	companies      *company.Service
-	bankRequisites *requisite.Service
+	db               *pgxpool.Pool
+	mux              *http.ServeMux
+	currencies       *currency.Service
+	companies        *company.Service
+	bankRequisites   *requisite.BankService
+	cryptoRequisites *requisite.CryptoService
 }
 
-func New(db *pgxpool.Pool, currencies *currency.Service, companies *company.Service, bankRequisites *requisite.Service) *Server {
+func New(
+	db *pgxpool.Pool,
+	currencies *currency.Service,
+	companies *company.Service,
+	bankRequisites *requisite.BankService,
+	cryptoRequisites *requisite.CryptoService,
+) *Server {
 	s := &Server{
-		db:             db,
-		mux:            http.NewServeMux(),
-		currencies:     currencies,
-		companies:      companies,
-		bankRequisites: bankRequisites,
+		db:               db,
+		mux:              http.NewServeMux(),
+		currencies:       currencies,
+		companies:        companies,
+		bankRequisites:   bankRequisites,
+		cryptoRequisites: cryptoRequisites,
 	}
 	s.routes()
 	return s
@@ -53,6 +61,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/companies/{id}/bank-requisites", s.handleListBankRequisites())
 	s.mux.HandleFunc("POST /api/companies/{id}/bank-requisites", s.handleCreateBankRequisite())
 	s.mux.HandleFunc("POST /api/companies/{id}/bank-requisites/{rid}/close", s.handleCloseBankRequisite())
+
+	s.mux.HandleFunc("GET /api/companies/{id}/crypto-requisites", s.handleListCryptoRequisites())
+	s.mux.HandleFunc("POST /api/companies/{id}/crypto-requisites", s.handleCreateCryptoRequisite())
+	s.mux.HandleFunc("POST /api/companies/{id}/crypto-requisites/{rid}/close", s.handleCloseCryptoRequisite())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

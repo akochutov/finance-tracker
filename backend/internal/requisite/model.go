@@ -23,3 +23,14 @@ type BankRequisite struct {
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
+
+type CryptoRequisite struct {
+	ID            uuid.UUID  `json:"id"`
+	CompanyID     uuid.UUID  `json:"company_id"`
+	Network       string     `json:"network"`
+	WalletAddress string     `json:"wallet_address"`
+	ValidFrom     time.Time  `json:"valid_from"`
+	ValidTo       *time.Time `json:"valid_to"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
+}

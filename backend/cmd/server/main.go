@@ -38,12 +38,14 @@ func main() {
 	companyRepo := company.NewRepository(db)
 	companyService := company.NewService(companyRepo)
 
-	bankRequisiteRepo := requisite.NewRepository(db)
-	bankRequisiteService := requisite.NewService(bankRequisiteRepo)
+	bankRequisiteRepo := requisite.NewBankRepository(db)
+	bankRequisiteService := requisite.NewBankService(bankRequisiteRepo)
+	cryptoRequisiteRepo := requisite.NewCryptoRepository(db)
+	cryptoRequisiteService := requisite.NewCryptoService(cryptoRequisiteRepo)
 
 	srv := &http.Server{
 		Addr:           cfg.HTTPAddr,
-		Handler:        api.New(db, currencyService, companyService, bankRequisiteService),
+		Handler:        api.New(db, currencyService, companyService, bankRequisiteService, cryptoRequisiteService),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

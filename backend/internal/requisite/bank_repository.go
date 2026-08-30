@@ -13,15 +13,15 @@ import (
 
 var ErrNotFound = errors.New("requisite not found")
 
-type Repository struct {
+type BankRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewRepository(db *pgxpool.Pool) *Repository {
-	return &Repository{db: db}
+func NewBankRepository(db *pgxpool.Pool) *BankRepository {
+	return &BankRepository{db: db}
 }
 
-func (r *Repository) Create(ctx context.Context, br BankRequisite) (BankRequisite, error) {
+func (r *BankRepository) Create(ctx context.Context, br BankRequisite) (BankRequisite, error) {
 	const q = `
 		INSERT INTO bank_requisites (
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
@@ -46,13 +46,13 @@ func (r *Repository) Create(ctx context.Context, br BankRequisite) (BankRequisit
 		&out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
-		return BankRequisite{}, fmt.Errorf("insert bank reqisite: %w", err)
+		return BankRequisite{}, fmt.Errorf("insert bank requisite: %w", err)
 	}
 
 	return out, nil
 }
 
-func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (BankRequisite, error) {
+func (r *BankRepository) GetByID(ctx context.Context, id uuid.UUID) (BankRequisite, error) {
 	const q = `
 		SELECT 
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
@@ -78,7 +78,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (BankRequisite, 
 	return out, nil
 }
 
-func (r *Repository) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]BankRequisite, error) {
+func (r *BankRepository) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]BankRequisite, error) {
 	const q = `
 		SELECT 
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
@@ -115,7 +115,7 @@ func (r *Repository) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]
 	return bankRequisites, nil
 }
 
-func (r *Repository) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
+func (r *BankRepository) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
 	const q = `UPDATE bank_requisites SET valid_to = $1 WHERE id = $2 AND valid_to IS NULL`
 
 	tag, err := r.db.Exec(ctx, q, validTo, id)

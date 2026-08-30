@@ -12,15 +12,15 @@ import (
 
 var ErrInvalidInput = errors.New("invalid requisite data")
 
-type Service struct {
-	repo *Repository
+type BankService struct {
+	repo *BankRepository
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewBankService(repo *BankRepository) *BankService {
+	return &BankService{repo: repo}
 }
 
-func (s *Service) Create(ctx context.Context, br BankRequisite) (BankRequisite, error) {
+func (s *BankService) Create(ctx context.Context, br BankRequisite) (BankRequisite, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
 		return BankRequisite{}, fmt.Errorf("generate uuid: %w", err)
@@ -43,11 +43,11 @@ func (s *Service) Create(ctx context.Context, br BankRequisite) (BankRequisite, 
 	return s.repo.Create(ctx, br)
 }
 
-func (s *Service) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]BankRequisite, error) {
+func (s *BankService) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]BankRequisite, error) {
 	return s.repo.ListByCompany(ctx, companyID)
 }
 
-func (s *Service) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
+func (s *BankService) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
 	req, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return err
