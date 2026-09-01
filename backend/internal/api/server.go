@@ -7,6 +7,7 @@ import (
 
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,6 +19,7 @@ type Server struct {
 	companies        *company.Service
 	bankRequisites   *requisite.BankService
 	cryptoRequisites *requisite.CryptoService
+	incomes          *income.Service
 }
 
 func New(
@@ -26,6 +28,7 @@ func New(
 	companies *company.Service,
 	bankRequisites *requisite.BankService,
 	cryptoRequisites *requisite.CryptoService,
+	incomes *income.Service,
 ) *Server {
 	s := &Server{
 		db:               db,
@@ -34,6 +37,7 @@ func New(
 		companies:        companies,
 		bankRequisites:   bankRequisites,
 		cryptoRequisites: cryptoRequisites,
+		incomes:          incomes,
 	}
 	s.routes()
 	return s
@@ -65,6 +69,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/companies/{id}/crypto-requisites", s.handleListCryptoRequisites())
 	s.mux.HandleFunc("POST /api/companies/{id}/crypto-requisites", s.handleCreateCryptoRequisite())
 	s.mux.HandleFunc("POST /api/companies/{id}/crypto-requisites/{rid}/close", s.handleCloseCryptoRequisite())
+
+	s.mux.HandleFunc("GET /api/incomes", s.handleListIncomes())
+	s.mux.HandleFunc("GET /api/incomes/{id}", s.handleGetIncome())
+	s.mux.HandleFunc("POST /api/incomes", s.handleCreateIncome())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

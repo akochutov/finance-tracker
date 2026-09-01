@@ -47,6 +47,10 @@ func (s *BankService) ListByCompany(ctx context.Context, companyID uuid.UUID) ([
 	return s.repo.ListByCompany(ctx, companyID)
 }
 
+func (s *BankService) GetByID(ctx context.Context, id uuid.UUID) (BankRequisite, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
 func (s *BankService) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
 	req, err := s.repo.GetByID(ctx, id)
 	if err != nil {
