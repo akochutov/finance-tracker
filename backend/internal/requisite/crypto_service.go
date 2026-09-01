@@ -42,6 +42,10 @@ func (s *CryptoService) ListByCompany(ctx context.Context, companyID uuid.UUID) 
 	return s.repo.ListByCompany(ctx, companyID)
 }
 
+func (s *CryptoService) GetByID(ctx context.Context, id uuid.UUID) (CryptoRequisite, error) {
+	return s.repo.GetByID(ctx, id)
+}
+
 func (s *CryptoService) Close(ctx context.Context, id uuid.UUID, validTo time.Time) error {
 	req, err := s.repo.GetByID(ctx, id)
 	if err != nil {
