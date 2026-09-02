@@ -15,6 +15,7 @@ import (
 type Server struct {
 	db               *pgxpool.Pool
 	mux              *http.ServeMux
+	handler          http.Handler
 	currencies       *currency.Service
 	companies        *company.Service
 	bankRequisites   *requisite.BankService
@@ -40,11 +41,12 @@ func New(
 		incomes:          incomes,
 	}
 	s.routes()
+	s.handler = corsMiddleware(s.mux)
 	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 func (s *Server) routes() {
