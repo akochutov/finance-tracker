@@ -1,9 +1,16 @@
 const BASE_URL = "http://localhost:8080"
 
-async function request(path) {
-    const response = await fetch(`${BASE_URL}${path}`);
+async function request(path, options = {}) {
+    const response = await fetch(`${BASE_URL}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+    });
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error || `HTTP ${response.status}`);
+    }
+    if (response.status === 204) {
+        return null;
     }
     return response.json();
 }
@@ -11,6 +18,26 @@ async function request(path) {
 export async function getCurrencies() {
     const data = await request("/api/currencies");
     return data.currencies
+}
+
+export async function createCurrency(currency) {
+    return request("/api/currencies", {
+        method: "POST",
+        body: JSON.stringify(currency),
+    });
+}
+
+export async function updateCurrency(code, fields) {
+    return request(`/api/currencies/${code}`, {
+        method: "PUT",
+        body: JSON.stringify(fields),
+    });
+}
+
+export async function deactivateCurrency(code) {
+    return request(`/api/currencies/${code}`, {
+        method: "DELETE",
+    });
 }
 
 export async function getCompanies() {

@@ -1,4 +1,4 @@
-import CurrenciesList from "./components/CurrenciesList";
+import CurrenciesPage from "./components/CurrenciesPage";
 import CompaniesList from "./components/CompaniesList";
 import IncomesList from "./components/IncomesList";
 
@@ -6,7 +6,7 @@ function App() {
   return (
     <div>
       <h1>Finance tracker</h1>
-      <CurrenciesList />
+      <CurrenciesPage />
       <CompaniesList />
       <IncomesList />
     </div>
