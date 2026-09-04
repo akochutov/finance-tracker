@@ -1,18 +1,10 @@
 import { Routes, Route, Link } from "react-router-dom";
 import CurrenciesPage from "./components/CurrenciesPage";
-import CompaniesList from "./components/CompaniesList";
+import CompaniesPage from "./components/CompaniesPage";
 import IncomesList from "./components/IncomesList";
 
 function HomePage() {
   return <div>Dashboard - coming soon</div>;
-}
-
-function CompaniesPage() {
-  return (
-    <div>
-      <CompaniesList />
-    </div>
-  );
 }
 
 function IncomesPage() {
