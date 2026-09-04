@@ -1,31 +1,17 @@
-import { useState, useEffect } from "react";
-import { getCompanies } from "../api/client";
+import CompanyRow from "./CompanyRow";
 
-function CompaniesList() {
-    const [companies, setCompanies] = useState([]);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        getCompanies()
-            .then((data) => setCompanies(data))
-            .catch((err) => setError(err.message));
-    }, [])
-
-    if (error) {
-        return <div>Error loading companies: {error}</div>;
-    }
-
+function CompaniesList({ companies, onSave, onDeactivate }) {
     return (
-        <div>
-            <h2>Companies</h2>
-            <ul>
-                {companies.map((c) => (
-                    <li key={c.id}>
-                        {c.id} - {c.name} ({c.tax_id || "-"}, {c.address || "-"} {c.note || "-"})
-                    </li>
-                ))}
-            </ul>
-        </div>
+        <ul>
+            {companies.map((c) => (
+                <CompanyRow 
+                    key={c.id}
+                    company={c}
+                    onSave={onSave}
+                    onDeactivate={onDeactivate}
+                />
+            ))}
+        </ul>
     );
 }
 
