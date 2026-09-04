@@ -80,9 +80,23 @@ export async function getBankRequisites(companyId) {
     return data.bank_requisites;
 }
 
+export async function createBankRequisite(companyId, requisite) {
+    return request(`/api/companies/${companyId}/bank-requisites`, {
+        method: "POST",
+        body: JSON.stringify(requisite),
+    });
+}
+
 export async function getCryptoRequisites(companyId) {
     const data = await request(`/api/companies/${companyId}/crypto-requisites`);
     return data.crypto_requisites;
+}
+
+export async function createCryptoRequisite(companyId, requisite) {
+    return request(`/api/companies/${companyId}/crypto-requisites`, {
+        method: "POST",
+        body: JSON.stringify(requisite),
+    });
 }
 
 // --- Incomes ---

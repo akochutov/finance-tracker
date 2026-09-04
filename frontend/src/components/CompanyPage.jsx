@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCompany, getBankRequisites, getCryptoRequisites } from "../api/client";
+import BankRequisiteForm from "./BankRequisiteForm";
+import CryptoRequisiteForm from "./CryptoRequisiteForm";
 
 function CompanyPage() {
     const { id } = useParams();
@@ -45,6 +47,7 @@ function CompanyPage() {
             <p>Note: {company.note || "-"}</p>
 
             <h3>Bank requisites</h3>
+            <BankRequisiteForm companyId={id} onCreated={loadData} />
             <ul>
                 {bankRequisites.map((r) => (
                     <li key={r.id}>
@@ -55,6 +58,7 @@ function CompanyPage() {
             </ul>
 
             <h3>Crypto requisites</h3>
+            <CryptoRequisiteForm companyId={id} onCreated={loadData} />
             <ul>
                 {cryptoRequisites.map((r) => (
                     <li key={r.id}>
