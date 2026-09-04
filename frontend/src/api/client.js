@@ -87,6 +87,13 @@ export async function createBankRequisite(companyId, requisite) {
     });
 }
 
+export async function closeBankRequisite(companyId, requisiteId, validTo) {
+    return request(`/api/companies/${companyId}/bank-requisites/${requisiteId}/close`, {
+        method: "POST",
+        body: JSON.stringify({ valid_to: validTo }),
+    });
+}
+
 export async function getCryptoRequisites(companyId) {
     const data = await request(`/api/companies/${companyId}/crypto-requisites`);
     return data.crypto_requisites;
@@ -96,6 +103,13 @@ export async function createCryptoRequisite(companyId, requisite) {
     return request(`/api/companies/${companyId}/crypto-requisites`, {
         method: "POST",
         body: JSON.stringify(requisite),
+    });
+}
+
+export async function closeCryptoRequisite(companyId, requisiteId, validTo) {
+    return request(`/api/companies/${companyId}/crypto-requisites/${requisiteId}/close`, {
+        method: "POST",
+        body: JSON.stringify({ valid_to: validTo }),
     });
 }
 
