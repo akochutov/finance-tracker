@@ -49,6 +49,10 @@ export async function getCompanies() {
     return data.companies;
 }
 
+export async function getCompany(id) {
+    return request(`/api/companies/${id}`);
+}
+
 export async function createCompany(company) {
     return request("/api/companies", {
         method: "POST",
@@ -67,6 +71,18 @@ export async function deactivateCompany(id) {
     return request(`/api/companies/${id}`, {
         method: "DELETE",
     });
+}
+
+// --- Requisites ---
+
+export async function getBankRequisites(companyId) {
+    const data = await request(`/api/companies/${companyId}/bank-requisites`);
+    return data.bank_requisites;
+}
+
+export async function getCryptoRequisites(companyId) {
+    const data = await request(`/api/companies/${companyId}/crypto-requisites`);
+    return data.crypto_requisites;
 }
 
 // --- Incomes ---

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 function CompanyRow({ company, onSave, onDeactivate }) {
     const [isEditing, setIsEditing] = useState(false);
@@ -56,7 +57,7 @@ function CompanyRow({ company, onSave, onDeactivate }) {
 
     return (
         <li>
-            {company.name} ({company.tax_id || "-"}, {company.address || "-"}, {company.note || "-"})
+            <Link to={`/companies/${company.id}`}>{company.name}</Link> ({company.tax_id || "-"}, {company.address || "-"}, {company.note || "-"})
             {!company.is_active && " [inactive]"}
             {company.is_active && (
                 <>
