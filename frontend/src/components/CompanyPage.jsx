@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getCompany, getBankRequisites, getCryptoRequisites } from "../api/client";
+import { getCompany, getBankRequisites, getCryptoRequisites,
+    closeBankRequisite, closeCryptoRequisite } from "../api/client";
+import RequisiteRow from "./RequisiteRow";
 import BankRequisiteForm from "./BankRequisiteForm";
 import CryptoRequisiteForm from "./CryptoRequisiteForm";
 
@@ -24,6 +26,16 @@ function CompanyPage() {
         } catch (err) {
             setError(err.message);
         }
+    }
+
+    async function handleCloseBank(requisiteId, validTo) {
+        await closeBankRequisite(id, requisiteId, validTo);
+        await loadData();        
+    }
+
+    async function handleCloseCrypto(requisiteId, validTo) {
+        await closeCryptoRequisite(id, requisiteId, validTo);
+        await loadData();        
     }
 
     useEffect(() => {
@@ -50,10 +62,12 @@ function CompanyPage() {
             <BankRequisiteForm companyId={id} onCreated={loadData} />
             <ul>
                 {bankRequisites.map((r) => (
-                    <li key={r.id}>
-                        {r.bank_name} - {r.account_number} ({r.beneficiary_name})
-                        {r.valid_to && ` [closed ${new Date(r.valid_to).toLocaleDateString()}]`}
-                    </li>
+                    <RequisiteRow 
+                        key={r.id}
+                        requisite={r}
+                        label={`${r.bank_name} - ${r.account_number} (${r.beneficiary_name})`}
+                        onClose={handleCloseBank}
+                    />
                 ))}
             </ul>
 
@@ -61,10 +75,12 @@ function CompanyPage() {
             <CryptoRequisiteForm companyId={id} onCreated={loadData} />
             <ul>
                 {cryptoRequisites.map((r) => (
-                    <li key={r.id}>
-                        {r.network} - {r.wallet_address}
-                        {r.valid_to && ` [closed ${new Date(r.valid_to).toLocaleDateString()}]`}
-                    </li>
+                    <RequisiteRow
+                        key={r.id}
+                        requisite={r}
+                        label={`${r.network} - ${r.wallet_address}`}
+                        onClose={handleCloseCrypto}
+                    />
                 ))}
             </ul>
         </div>
