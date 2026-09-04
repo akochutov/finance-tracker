@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from "react-router-dom";
 import CurrenciesPage from "./components/CurrenciesPage";
 import CompaniesPage from "./components/CompaniesPage";
+import CompanyPage from "./components/CompanyPage";
 import IncomesList from "./components/IncomesList";
 
 function HomePage() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/currencies" element={<CurrenciesPage />} />
         <Route path="/companies" element={<CompaniesPage />} />
+        <Route path="/companies/:id" element={<CompanyPage />} />
         <Route path="/incomes" element={<IncomesPage />} />
       </Routes>
     </div>
