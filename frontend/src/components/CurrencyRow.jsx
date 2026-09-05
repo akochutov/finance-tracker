@@ -21,29 +21,47 @@ function CurrencyRow({ currency, onSave, onDeactivate }) {
 
     if (isEditing) {
         return (
-            <li>
-                {currency.code} -{" "}
-                <input value={name} onChange={(e) => setName(e.target.value)} />
-                <input 
-                    type="number"
-                    value={decimalPlaces}
-                    onChange={(e) => setDecimalPlaces(e.target.value)}
-                />
-                <button onClick={save}>Save</button>
-                <button onClick={() => setIsEditing(false)}>Cancel</button>
+            <li className="row-editing">
+                <div className="form-grid">
+                    <div className="field">
+                        <label>Code</label>
+                        <div className="row-key">{currency.code}</div>
+                    </div>
+                    <div className="field">
+                        <label>Name</label>
+                        <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Decimal places</label>
+                        <input
+                            className="input"
+                            type="number"
+                            value={decimalPlaces}
+                            onChange={(e) => setDecimalPlaces(e.target.value)}
+                        />
+                    </div>
+                    <div className="row-actions">
+                        <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancel</button>
+                    </div>
+                </div>
             </li>
         );
     }
 
     return (
-        <li>
-            {currency.code} - {currency.name} ({currency.kind}, {currency.decimal_places} decimals)
-            {!currency.is_active && " [inactive]"}
-            {currency.is_active && (
-                <>
-                    <button onClick={startEdit}>Edit</button>
-                    <button onClick={() => onDeactivate(currency.code)}>Deactivate</button>
-                </>
+        <li className={currency.is_active ? "row" : "row row-inactive"}>
+            <span className="row-key">{currency.code}</span>
+            <span>{currency.name}</span>
+            <span className="row-meta">({currency.kind}, {currency.decimal_places} decimals)</span>
+            <span className="row-spacer" />
+            {currency.is_active ? (
+                <div className="row-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => onDeactivate(currency.code)}>Deactivate</button>
+                </div>
+            ) : (
+                <span className="badge badge-inactive">inactive</span>
             )}
         </li>
     );

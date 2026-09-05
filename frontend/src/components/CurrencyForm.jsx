@@ -29,30 +29,46 @@ function CurrencyForm({ onCreated }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h3>Add currency</h3>
-            {error && <div style={{ color: "red" }}>{error}</div>}
-            <input
-                placeholder="Code (USD)"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-            />
-            <input
-                placeholder="Name (US Dollar)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-            />
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
-                <option value="fiat">fiat</option>
-                <option value="crypto">crypto</option>
-            </select>
-            <input
-                type="number"
-                placeholder="Decimals"
-                value={decimalPlaces}
-                onChange={(e) => setDecimalPlaces(e.target.value)}
-            />
-            <button type="submit">Create</button>
+        <form className="card" onSubmit={handleSubmit}>
+            <h5 className="form-title">Add currency</h5>
+            {error && <div className="error">{error}</div>}
+            <div className="form-grid">
+                <div className="field">
+                    <label>Code</label>
+                    <input
+                        className="input"
+                        placeholder="USD"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                    />
+                </div>
+                <div className="field">
+                    <label>Name</label>
+                    <input
+                        className="input"
+                        placeholder="US Dollar"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                    />
+                </div>
+                <div className="field">
+                    <label>Kind</label>
+                    <select className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
+                        <option value="fiat">fiat</option>
+                        <option value="crypto">crypto</option>
+                    </select>
+                </div>
+                <div className="field">
+                    <label>Decimal places</label>
+                    <input
+                        className="input"
+                        type="number"
+                        value={decimalPlaces}
+                        onChange={(e) => setDecimalPlaces(e.target.value)}
+                    />
+                </div>
+                <button type="submit" className="btn btn-primary">Create</button>
+            </div>
         </form>
     );
 }

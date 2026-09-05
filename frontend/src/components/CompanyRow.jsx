@@ -28,42 +28,45 @@ function CompanyRow({ company, onSave, onDeactivate }) {
 
     if (isEditing) {
         return (
-            <li>
-                <input
-                    placeholder="Name" 
-                    value={name} 
-                    onChange={(e) => setName(e.target.value)} 
-                />
-                <input 
-                    placeholder="Tax ID"
-                    value={taxId} 
-                    onChange={(e) => setTaxId(e.target.value)}
-                />
-                <input
-                    placeholder="Address" 
-                    value={address} 
-                    onChange={(e) => setAddress(e.target.value)}
-                />
-                <input
-                    placeholder="Note" 
-                    value={note} 
-                    onChange={(e) => setNote(e.target.value)}
-                />
-                <button onClick={save}>Save</button>
-                <button onClick={() => setIsEditing(false)}>Cancel</button>
+            <li className="row-editing">
+                <div className="form-grid">
+                    <div className="field">
+                        <label>Name</label>
+                        <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Tax ID</label>
+                        <input className="input" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Address</label>
+                        <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Note</label>
+                        <input className="input" value={note} onChange={(e) => setNote(e.target.value)} />
+                    </div>
+                </div>
+                <div className="form-actions">
+                    <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setIsEditing(false)}>Cancel</button>
+                </div>
             </li>
         );
     }
 
     return (
-        <li>
-            <Link to={`/companies/${company.id}`}>{company.name}</Link> ({company.tax_id || "-"}, {company.address || "-"}, {company.note || "-"})
-            {!company.is_active && " [inactive]"}
-            {company.is_active && (
-                <>
-                    <button onClick={startEdit}>Edit</button>
-                    <button onClick={() => onDeactivate(company.id)}>Deactivate</button>
-                </>
+        <li className={company.is_active ? "row" : "row row-inactive"}>
+            <Link to={`/companies/${company.id}`} className="row-key">{company.name}</Link>
+            <span className="row-meta">({company.tax_id || "-"}, {company.address || "-"}, {company.note || "-"})</span>
+            <span className="row-spacer" />
+            {company.is_active ? (
+                <div className="row-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => onDeactivate(company.id)}>Deactivate</button>
+                </div>
+            ) : (
+                <span className="badge badge-inactive">inactive</span>
             )}
         </li>
     );

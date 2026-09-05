@@ -18,21 +18,25 @@ function RequisiteRow({ requisite, label, onClose }) {
     }
 
     return (
-        <li>
-            {label}
+        <li className={requisite.valid_to ? "row row-inactive" : "row"}>
+            <span>{label}</span>
+            <span className="row-spacer" />
             {requisite.valid_to ? (
-                ` [closed ${new Date(requisite.valid_to).toLocaleDateString()}]`
+                <span className="badge badge-closed">
+                    closed {new Date(requisite.valid_to).toLocaleDateString()}
+                </span>
             ) : (
-                <>
-                    {" "}
+                <div className="row-actions">
                     <input
+                        className="input"
                         type="date"
+                        style={{ width: "auto" }}
                         value={validTo}
                         onChange={(e) => setValidTo(e.target.value)}
                     />
-                    <button onClick={handleClose}>Close</button>
-                    {error && <span style={{ color: "red" }}> {error}</span>}
-                </>
+                    <button className="btn btn-ghost btn-sm" onClick={handleClose}>Close</button>
+                    {error && <span className="error" style={{ margin: 0, padding: "4px 8px" }}>{error}</span>}
+                </div>
             )}
         </li>
     );

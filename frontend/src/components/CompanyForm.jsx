@@ -29,30 +29,30 @@ function CompanyForm({ onCreated }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h3>Add company</h3>
-            {error && <div style={{ color: "red" }}>{error}</div>}
-            <input
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-            />
-            <input
-                placeholder="Tax ID"
-                value={taxId}
-                onChange={(e) => setTaxId(e.target.value)}
-            />
-            <input
-                placeholder="Address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-            />
-            <input
-                placeholder="Note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-            />
-            <button type="submit">Create</button>
+        <form className="card" onSubmit={handleSubmit}>
+            <h5 className="form-title">Add company</h5>
+            {error && <div className="error">{error}</div>}
+            <div className="form-grid">
+                <div className="field">
+                    <label>Name</label>
+                    <input className="input" placeholder="Nitka Inc." value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Tax ID</label>
+                    <input className="input" placeholder="Optional" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Address</label>
+                    <input className="input" placeholder="Optional" value={address} onChange={(e) => setAddress(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Note</label>
+                    <input className="input" placeholder="Optional" value={note} onChange={(e) => setNote(e.target.value)} />
+                </div>
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Create</button>
+            </div>
         </form>
     );
 }

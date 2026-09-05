@@ -2,7 +2,7 @@ import CurrencyRow from "./CurrencyRow";
 
 function CurrenciesList({ currencies, onSave, onDeactivate }) {
     return (
-        <ul>
+        <ul className="list">
             {currencies.map((c) => (
                 <CurrencyRow
                     key={c.code}

@@ -32,21 +32,32 @@ function IncomesPage() {
     }, []);
 
     if (error) {
-        return <div>Error: {error}</div>
+        return <div className="error">{error}</div>;
     }
 
     return (
         <div>
-            <h2>Incomes</h2>
-            <IncomeForm onCreated={loadData} /> 
-            <ul>
+            <div className="page-header">
+                <h1>Incomes</h1>
+                <p>Recorded payments between companies.</p>
+            </div>
+            <IncomeForm onCreated={loadData} />
+            <div className="list-header">
+                <h5>All incomes</h5>
+                <span className="row-meta">{incomes.length}</span>
+            </div>
+            <ul className="list">
                 {incomes.map((inc) => (
-                    <li key={inc.id}>
-                        {formatDate(inc.occurred_at)}: {inc.amount} {inc.currency} —{" "}
-                        from {companiesById[inc.payer_id] || inc.payer_id}{" "}
-                        to {companiesById[inc.beneficiary_id] || inc.beneficiary_id}{" "}
-                        ({inc.payment_type})
-                        {inc.note ? ` — ${inc.note}` : ""}
+                    <li key={inc.id} className="row">
+                        <span className="row-meta">{formatDate(inc.occurred_at)}</span>
+                        <span className="row-key mono">{inc.amount} {inc.currency}</span>
+                        <span>
+                            {companiesById[inc.payer_id] || inc.payer_id}
+                            {" → "}
+                            {companiesById[inc.beneficiary_id] || inc.beneficiary_id}
+                        </span>
+                        <span className="badge">{inc.payment_type}</span>
+                        {inc.note && <span className="row-meta">{inc.note}</span>}
                     </li>
                 ))}
             </ul>
