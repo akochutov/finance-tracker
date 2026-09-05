@@ -119,3 +119,10 @@ export async function getIncomes() {
     const data = await request("/api/incomes");
     return data.incomes;
 }
+
+export async function createIncome(income) {
+    return request("/api/incomes", {
+        method: "POST",
+        body: JSON.stringify(income),
+    });
+}
