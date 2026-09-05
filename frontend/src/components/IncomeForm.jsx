@@ -100,78 +100,94 @@ function IncomeForm({ onCreated }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h3>Add income</h3>
-            {error && <div style={{ color: "red" }}>{error}</div>}
-            
-            <select value={payerId} onChange={(e) => setPayerId(e.target.value)}>
-                <option value="">- Payer -</option>
-                {companies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-            </select>
+        <form className="card" onSubmit={handleSubmit}>
+            <h5 className="form-title">Add income</h5>
+            {error && <div className="error">{error}</div>}
+            <div className="form-grid">
+                <div className="field">
+                    <label>Payer</label>
+                    <select className="input" value={payerId} onChange={(e) => setPayerId(e.target.value)}>
+                        <option value="">- Payer -</option>
+                        {companies.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
 
-            <select value={beneficiaryId} onChange={(e) => setBeneficiaryId(e.target.value)}>
-                <option value="">- Beneficiary -</option>
-                {companies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-            </select>
+                <div className="field">
+                    <label>Beneficiary</label>
+                    <select className="input" value={beneficiaryId} onChange={(e) => setBeneficiaryId(e.target.value)}>
+                        <option value="">- Beneficiary -</option>
+                        {companies.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
 
-            <select value={payerRequisiteId} onChange={(e) => setPayerRequisiteId(e.target.value)}>
-                <option value="">- Payer requisite -</option>
-                {payerRequisites.map((r) => (
-                    <option key={r.id} value={r.id}>
-                        {paymentType === "bank"
-                            ? `${r.bank_name} - ${r.account_number}`
-                            : `${r.network} - ${r.wallet_address}`}
-                    </option>
-                ))}
-            </select>
+                <div className="field">
+                    <label>Payment type</label>
+                    <select className="input" value={paymentType} onChange={(e) => setPaymentType(e.target.value)}>
+                        <option value="bank">bank</option>
+                        <option value="crypto">crypto</option>
+                    </select>
+                </div>
 
-            <select value={beneficiaryRequisiteId} onChange={(e) => setBeneficiaryRequisiteId(e.target.value)}>
-                <option value="">- Beneficiary requisite -</option>
-                {beneficiaryRequisites.map((r) => (
-                    <option key={r.id} value={r.id}>
-                        {paymentType === "bank"
-                            ? `${r.bank_name} - ${r.account_number}`
-                            : `${r.network} - ${r.wallet_address}`}
-                    </option>
-                ))}
-            </select>
+                <div className="field">
+                    <label>Payer requisite</label>
+                    <select className="input" value={payerRequisiteId} onChange={(e) => setPayerRequisiteId(e.target.value)}>
+                        <option value="">- Payer requisite -</option>
+                        {payerRequisites.map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {paymentType === "bank"
+                                    ? `${r.bank_name} - ${r.account_number}`
+                                    : `${r.network} - ${r.wallet_address}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-            <input 
-                type="number"
-                placeholder="Amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-            />
+                <div className="field">
+                    <label>Beneficiary requisite</label>
+                    <select className="input" value={beneficiaryRequisiteId} onChange={(e) => setBeneficiaryRequisiteId(e.target.value)}>
+                        <option value="">- Beneficiary requisite -</option>
+                        {beneficiaryRequisites.map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {paymentType === "bank"
+                                    ? `${r.bank_name} - ${r.account_number}`
+                                    : `${r.network} - ${r.wallet_address}`}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-            <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                <option value="">- Currency -</option>
-                {currencies.map((c) => (
-                    <option key={c.code} value={c.code}>{c.code}</option>
-                ))}
-            </select>
+                <div className="field">
+                    <label>Amount</label>
+                    <input className="input" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                </div>
 
-            <input
-                type="date"
-                value={occurredAt}
-                onChange={(e) => setOccurredAt(e.target.value)} 
-            />
+                <div className="field">
+                    <label>Currency</label>
+                    <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                        <option value="">- Currency -</option>
+                        {currencies.map((c) => (
+                            <option key={c.code} value={c.code}>{c.code}</option>
+                        ))}
+                    </select>
+                </div>
 
-            <select value={paymentType} onChange={(e) => setPaymentType(e.target.value)}>
-                <option value="bank">bank</option>
-                <option value="crypto">crypto</option>
-            </select>
+                <div className="field">
+                    <label>Date</label>
+                    <input className="input" type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} />
+                </div>
 
-            <input
-                placeholder="Note"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-            />
-
-            <button type="submit">Create</button>
+                <div className="field">
+                    <label>Note</label>
+                    <input className="input" value={note} onChange={(e) => setNote(e.target.value)} />
+                </div>
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Create</button>
+            </div>
         </form>
     );
 }

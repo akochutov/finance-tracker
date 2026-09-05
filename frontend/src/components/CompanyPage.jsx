@@ -43,46 +43,63 @@ function CompanyPage() {
     }, [id]);
 
     if (error) {
-        return <div>Error: {error}</div>;
+        return <div className="error">{error}</div>;
     }
 
     if (!company) {
-        return <div>Loading...</div>
+        return <div className="loading">Loading...</div>;
     }
 
     return (
         <div>
             <Link to="/companies">← Back to companies</Link>
-            <h2>{company.name}</h2>
-            <p>Tax ID: {company.tax_id || "-"}</p>
-            <p>Address: {company.address || "-"}</p>
-            <p>Note: {company.note || "-"}</p>
+            <div className="page-header" style={{ marginTop: 14 }}>
+                <h1>{company.name}</h1>
+                <div className="meta-strip">
+                    <div className="meta-item">
+                        <div className="meta-label">Tax ID</div>
+                        <div className="meta-value">{company.tax_id || "-"}</div>
+                    </div>
+                    <div className="meta-item">
+                        <div className="meta-label">Address</div>
+                        <div className="meta-value">{company.address || "-"}</div>
+                    </div>
+                    <div className="meta-item">
+                        <div className="meta-label">Note</div>
+                        <div className="meta-value">{company.note || "-"}</div>
+                    </div>
+                </div>
+            </div>
 
-            <h3>Bank requisites</h3>
-            <BankRequisiteForm companyId={id} onCreated={loadData} />
-            <ul>
-                {bankRequisites.map((r) => (
-                    <RequisiteRow 
-                        key={r.id}
-                        requisite={r}
-                        label={`${r.bank_name} - ${r.account_number} (${r.beneficiary_name})`}
-                        onClose={handleCloseBank}
-                    />
-                ))}
-            </ul>
+            <div className="section">
+                <h3>Bank requisites</h3>
+                <BankRequisiteForm companyId={id} onCreated={loadData} />
+                <ul className="list">
+                    {bankRequisites.map((r) => (
+                        <RequisiteRow
+                            key={r.id}
+                            requisite={r}
+                            label={`${r.bank_name} - ${r.account_number} (${r.beneficiary_name})`}
+                            onClose={handleCloseBank}
+                        />
+                    ))}
+                </ul>
+            </div>
 
-            <h3>Crypto requisites</h3>
-            <CryptoRequisiteForm companyId={id} onCreated={loadData} />
-            <ul>
-                {cryptoRequisites.map((r) => (
-                    <RequisiteRow
-                        key={r.id}
-                        requisite={r}
-                        label={`${r.network} - ${r.wallet_address}`}
-                        onClose={handleCloseCrypto}
-                    />
-                ))}
-            </ul>
+            <div className="section">
+                <h3>Crypto requisites</h3>
+                <CryptoRequisiteForm companyId={id} onCreated={loadData} />
+                <ul className="list">
+                    {cryptoRequisites.map((r) => (
+                        <RequisiteRow
+                            key={r.id}
+                            requisite={r}
+                            label={`${r.network} - ${r.wallet_address}`}
+                            onClose={handleCloseCrypto}
+                        />
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 }

@@ -40,13 +40,20 @@ function CurrenciesPage() {
 
     return (
         <div>
-            <h2>Currencies</h2>
-            {error && <div style={{ color: "red" }}>{error}</div>}
+            <div className="page-header">
+                <h1>Currencies</h1>
+                <p>Units of account used across incomes and expenses.</p>
+            </div>
+            {error && <div className="error">{error}</div>}
             <CurrencyForm onCreated={loadCurrencies} />
-            <CurrenciesList 
-                currencies={currencies} 
+            <div className="list-header">
+                <h5>All currencies</h5>
+                <span className="row-meta">{currencies.length}</span>
+            </div>
+            <CurrenciesList
+                currencies={currencies}
                 onSave={handleSave}
-                onDeactivate={handleDeactivate} 
+                onDeactivate={handleDeactivate}
             />
         </div>
     );

@@ -2,9 +2,9 @@ import CompanyRow from "./CompanyRow";
 
 function CompaniesList({ companies, onSave, onDeactivate }) {
     return (
-        <ul>
+        <ul className="list">
             {companies.map((c) => (
-                <CompanyRow 
+                <CompanyRow
                     key={c.id}
                     company={c}
                     onSave={onSave}

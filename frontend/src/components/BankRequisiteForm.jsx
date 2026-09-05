@@ -44,54 +44,50 @@ function BankRequisiteForm({ companyId, onCreated }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            {error && <div style={{ color: "red" }}>{error}</div>}
-            <input
-                placeholder="Beneficiary Name"
-                value={beneficiaryName}
-                onChange={(e) => setBeneficiaryName(e.target.value)}
-            />
-            <input
-                placeholder="Account Number"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-            />
-            <input
-                placeholder="Bank Name"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-            />
-            <input
-                placeholder="Bank SWIFT"
-                value={bankSwift}
-                onChange={(e) => setBankSwift(e.target.value)}
-            />
-            <input
-                placeholder="Bank Address"
-                value={bankAddress}
-                onChange={(e) => setBankAddress(e.target.value)}
-            />
-            <input
-                placeholder="Correspondent Bank Name"
-                value={correspondentBankName}
-                onChange={(e) => setCorrespondentBankName(e.target.value)}
-            />
-            <input
-                placeholder="Correspondent Bank SWIFT"
-                value={correspondentBankSwift}
-                onChange={(e) => setCorrespondentBankSwift(e.target.value)}
-            />
-            <input
-                placeholder="Intermediary Bank Name"
-                value={intermediaryBankName}
-                onChange={(e) => setIntermediaryBankName(e.target.value)}
-            />
-            <input
-                placeholder="Intermediary Bank SWIFT"
-                value={intermediaryBankSwift}
-                onChange={(e) => setIntermediaryBankSwift(e.target.value)}
-            />
-            <button type="submit">Add</button>
+        <form className="card" onSubmit={handleSubmit}>
+            <h5 className="form-title">Add bank requisite</h5>
+            {error && <div className="error">{error}</div>}
+            <div className="form-grid">
+                <div className="field">
+                    <label>Beneficiary Name</label>
+                    <input className="input" value={beneficiaryName} onChange={(e) => setBeneficiaryName(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Account Number</label>
+                    <input className="input" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Bank Name</label>
+                    <input className="input" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Bank SWIFT</label>
+                    <input className="input" value={bankSwift} onChange={(e) => setBankSwift(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Bank Address</label>
+                    <input className="input" value={bankAddress} onChange={(e) => setBankAddress(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Correspondent Bank Name</label>
+                    <input className="input" value={correspondentBankName} onChange={(e) => setCorrespondentBankName(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Correspondent Bank SWIFT</label>
+                    <input className="input" value={correspondentBankSwift} onChange={(e) => setCorrespondentBankSwift(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Intermediary Bank Name</label>
+                    <input className="input" value={intermediaryBankName} onChange={(e) => setIntermediaryBankName(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Intermediary Bank SWIFT</label>
+                    <input className="input" value={intermediaryBankSwift} onChange={(e) => setIntermediaryBankSwift(e.target.value)} />
+                </div>
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Add</button>
+            </div>
         </form>
     );
 } 

@@ -1,111 +1,445 @@
+/* ============================================================
+   Finance tracker — design system
+   Derived from the Design mockup. Self-contained: all colors,
+   typography and component styles live here as CSS variables +
+   classes. Components just add className="..." — no CSS edits.
+   ============================================================ */
+
+/* ---- Design tokens ---------------------------------------- */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Accent (calm business blue) */
+  --color-accent:      #3b5bdb;
+  --color-accent-700:  #2f49b0;
+  --color-accent-300:  #b9c4f2;
+  --color-accent-100:  #eef1fc;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Neutral scale */
+  --color-text:        #1c2230;
+  --color-neutral-800: #3a4254;
+  --color-neutral-700: #5b6478;
+  --color-neutral-600: #737c90;
+  --color-neutral-500: #9198aa;
+  --color-neutral-300: #d5d9e2;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Surfaces */
+  --color-bg:          #f7f8fb;
+  --color-surface:     #ffffff;
+  --color-divider:     #e3e6ee;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Semantic */
+  --color-danger:      #c0392b;
+  --color-danger-bg:   #fdecea;
+  --color-success:     #2e7d46;
+
+  /* Typography */
+  --font-body:    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+  /* Spacing / radius */
+  --radius: 6px;
+  --shadow-sm: 0 1px 2px rgba(20, 25, 40, 0.06);
+  --shadow-md: 0 4px 14px rgba(20, 25, 40, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+/* ---- Reset / base ----------------------------------------- */
+* {
+  box-sizing: border-box;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html, body {
+  height: 100%;
 }
 
 body {
   margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+h1 { font-size: 30px; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
+h4 { font-size: 15px; }
+h5 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-neutral-700); }
+
+p { margin: 6px 0 0; }
+
+a {
+  color: var(--color-accent-700);
+  text-decoration: none;
+}
+a:hover { color: var(--color-accent); text-decoration: underline; }
+
+/* ============================================================
+   Layout: sidebar + content
+   Put this on the outer wrapper in App.jsx:  <div class="app">
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
 }
 
-code {
+/* ---- Sidebar ---------------------------------------------- */
+.sidebar {
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-divider);
+  padding: 24px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+}
+
+.sidebar-title {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* Brand name + subtitle (each on its own line) */
+.sidebar-brand {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.sidebar-sub {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-neutral-600);
+  margin-top: 6px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Each nav link (use <NavLink> from react-router) */
+.nav-link {
+  display: block;
+  padding: 9px 20px;
+  border-left: 3px solid transparent;
+  font-size: 14px;
+  color: var(--color-neutral-800);
+  text-decoration: none;
+}
+.nav-link:hover {
+  background: color-mix(in srgb, var(--color-text) 5%, transparent);
+  color: var(--color-text);
+  text-decoration: none;
+}
+/* react-router adds .active to the current NavLink */
+.nav-link.active {
+  background: var(--color-accent-100);
+  border-left-color: var(--color-accent);
+  color: var(--color-accent-700);
+  font-weight: 700;
+}
+
+.sidebar-section-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-neutral-500);
+  padding: 16px 20px 6px;
+}
+
+/* ---- Main content area ------------------------------------ */
+.content {
+  padding: 36px 44px 72px;
+  max-width: 1100px;
+}
+
+/* Page header (title + subtitle) */
+.page-header {
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: 16px;
+  margin-bottom: 28px;
+}
+.page-header p {
+  font-size: 14px;
+  color: var(--color-neutral-700);
+}
+
+/* ============================================================
+   Cards
+   ============================================================ */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card + .card,
+.card + .list,
+.list + .card {
+  margin-top: 24px;
+}
+
+/* ============================================================
+   Forms
+   ============================================================ */
+.form-title {
+  margin: 0 0 16px;
+}
+
+/* Row of fields that wraps nicely */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+/* A labelled field */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+
+/* Inputs, selects */
+.input,
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  width: 100%;
+  min-height: 36px;
+}
+.input:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-100);
+}
+
+/* Actions row (buttons aligned right) */
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 8px 16px;
+  min-height: 36px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btn:hover { filter: brightness(0.97); }
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--color-accent-700); filter: none; }
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-neutral-300);
+}
+.btn-secondary:hover { background: var(--color-accent-100); border-color: var(--color-accent-300); filter: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: transparent;
+}
+.btn-ghost:hover { background: var(--color-danger-bg); filter: none; }
+
+/* Small button variant for row actions */
+.btn-sm {
+  font-size: 13px;
+  padding: 5px 12px;
+  min-height: 30px;
+}
+
+/* ============================================================
+   Lists (rows of records)
+   ============================================================ */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* No bullet markers on any list item */
+.list li {
+  list-style: none;
+}
+
+.list-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 36px 0 10px;
+}
+
+/* A single record row */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.row:hover {
+  background: color-mix(in srgb, var(--color-text) 3%, transparent);
+}
+
+/* Row in edit mode (highlighted) */
+.row-editing {
+  list-style: none;
+  padding: 16px 12px;
+  border-bottom: 1px solid var(--color-divider);
+  background: var(--color-accent-100);
+}
+
+/* Inactive / closed rows are muted */
+.row-inactive {
+  color: var(--color-neutral-500);
+}
+.row-inactive:hover { background: transparent; }
+
+/* Push trailing content (buttons) to the right */
+.row-spacer { flex: 1; }
+
+/* Primary label inside a row (code, name) */
+.row-key {
+  font-family: var(--font-heading);
+  font-weight: 800;
   font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+}
+.row-meta {
+  font-size: 13px;
+  color: var(--color-neutral-700);
+}
+
+/* Row actions group */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   Badges / markers
+   ============================================================ */
+.badge {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-divider);
+  color: var(--color-neutral-700);
+}
+.badge-inactive,
+.badge-closed {
+  color: var(--color-neutral-500);
+}
+
+/* Monospace for money / numeric values */
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Error / message
+   ============================================================ */
+.error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.loading {
+  color: var(--color-neutral-700);
+  padding: 24px 0;
+}
+
+/* ============================================================
+   Sections on the company detail page
+   ============================================================ */
+.section {
+  margin-top: 36px;
+}
+.section > h3 {
+  margin-bottom: 14px;
+}
+
+/* Detail meta strip (Tax ID / Address / Note) */
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-top: 16px;
+}
+.meta-strip .meta-item .meta-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.meta-strip .meta-item .meta-value {
+  font-size: 14px;
+  margin-top: 4px;
 }

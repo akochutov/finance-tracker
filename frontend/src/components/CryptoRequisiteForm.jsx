@@ -23,20 +23,22 @@ function CryptoRequisiteForm({ companyId, onCreated }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h4>Add crypto requisite</h4>
-            {error && <div style={{ color: "red" }}>{error}</div>}
-            <input
-                placeholder="Network (TRC20)"
-                value={network}
-                onChange={(e) => setNetwork(e.target.value)}
-            />
-            <input
-                placeholder="Wallet address"
-                value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
-            />
-            <button type="submit">Add</button>
+        <form className="card" onSubmit={handleSubmit}>
+            <h5 className="form-title">Add crypto requisite</h5>
+            {error && <div className="error">{error}</div>}
+            <div className="form-grid">
+                <div className="field">
+                    <label>Network</label>
+                    <input className="input" placeholder="TRC20" value={network} onChange={(e) => setNetwork(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Wallet address</label>
+                    <input className="input" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} />
+                </div>
+            </div>
+            <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Add</button>
+            </div>
         </form>
     );
 }

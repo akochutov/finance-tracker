@@ -40,9 +40,16 @@ function CompaniesPage() {
 
     return (
         <div>
-            <h2>Companies</h2>
-            {error && <div style={{ color: "red" }}>{error}</div>}
+            <div className="page-header">
+                <h1>Companies</h1>
+                <p>Counterparties: payers, beneficiaries and their requisites.</p>
+            </div>
+            {error && <div className="error">{error}</div>}
             <CompanyForm onCreated={loadCompanies} />
+            <div className="list-header">
+                <h5>All companies</h5>
+                <span className="row-meta">{companies.length}</span>
+            </div>
             <CompaniesList
                 companies={companies}
                 onSave={handleSave}
