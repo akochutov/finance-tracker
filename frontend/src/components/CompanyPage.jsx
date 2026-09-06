@@ -79,7 +79,7 @@ function CompanyPage() {
                         <RequisiteRow
                             key={r.id}
                             requisite={r}
-                            label={`${r.bank_name} - ${r.account_number} (${r.beneficiary_name})`}
+                            label={`${r.bank_name} - ${r.account_number} ${r.note ? ` - ${r.note}` : ""} (${r.beneficiary_name})`}
                             onClose={handleCloseBank}
                         />
                     ))}
@@ -94,7 +94,7 @@ function CompanyPage() {
                         <RequisiteRow
                             key={r.id}
                             requisite={r}
-                            label={`${r.network} - ${r.wallet_address}`}
+                            label={`${r.network} - ${r.wallet_address}${r.note ? ` - ${r.note}` : ""}`}
                             onClose={handleCloseCrypto}
                         />
                     ))}

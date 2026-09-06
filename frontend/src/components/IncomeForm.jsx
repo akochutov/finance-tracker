@@ -12,6 +12,7 @@ function IncomeForm({ onCreated }) {
     const [occurredAt, setOccurredAt] = useState("");
     const [paymentType, setPaymentType] = useState("bank");
     const [note, setNote] = useState("");
+    const [transactionRef, setTransactionRef] = useState("");
     const [error, setError] = useState(null);
 
     const [payerRequisites, setPayerRequisites] = useState([]);
@@ -83,6 +84,7 @@ function IncomeForm({ onCreated }) {
                 payer_requisite_id: payerRequisiteId,
                 beneficiary_requisite_id: beneficiaryRequisiteId,
                 note: note || null,
+                transaction_ref: transactionRef || null,
             });
             setPayerId("");
             setBeneficiaryId("");
@@ -93,6 +95,7 @@ function IncomeForm({ onCreated }) {
             setNote("");
             setPayerRequisiteId("");
             setBeneficiaryRequisiteId("");
+            setTransactionRef("");
             onCreated();
         } catch (err) {
             setError(err.message);
@@ -183,6 +186,10 @@ function IncomeForm({ onCreated }) {
                 <div className="field">
                     <label>Note</label>
                     <input className="input" value={note} onChange={(e) => setNote(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Transaction ref</label>
+                    <input className="input" placeholder="Number or link" value={transactionRef} onChange={(e) => setTransactionRef(e.target.value)} />
                 </div>
             </div>
             <div className="form-actions">

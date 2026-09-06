@@ -24,20 +24,20 @@ func (r *Repository) Create(ctx context.Context, in Income) (Income, error) {
 	const q = `
 		INSERT INTO incomes (
 			id, payer_id, beneficiary_id, amount, currency, occurred_at, payment_type, 
-			payer_requisite_id, beneficiary_requisite_id, note, is_active
+			payer_requisite_id, beneficiary_requisite_id, note, transaction_ref, is_active
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING 
 			id, payer_id, beneficiary_id, amount, currency, occurred_at, payment_type,
-    		payer_requisite_id, beneficiary_requisite_id, note, is_active, created_at, updated_at`
+    		payer_requisite_id, beneficiary_requisite_id, note, transaction_ref, is_active, created_at, updated_at`
 
 	var out Income
 	err := r.db.QueryRow(
 		ctx, q, in.ID, in.PayerID, in.BeneficiaryID, in.Amount, in.Currency, in.OccurredAt,
-		in.PaymentType, in.PayerRequisiteID, in.BeneficiaryRequisiteID, in.Note, in.IsActive,
+		in.PaymentType, in.PayerRequisiteID, in.BeneficiaryRequisiteID, in.Note, in.TransactionRef, in.IsActive,
 	).Scan(
 		&out.ID, &out.PayerID, &out.BeneficiaryID, &out.Amount, &out.Currency, &out.OccurredAt,
-		&out.PaymentType, &out.PayerRequisiteID, &out.BeneficiaryRequisiteID, &out.Note, &out.IsActive,
+		&out.PaymentType, &out.PayerRequisiteID, &out.BeneficiaryRequisiteID, &out.Note, &out.TransactionRef, &out.IsActive,
 		&out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -51,14 +51,14 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (Income, error) 
 	const q = `
 		SELECT
 			id, payer_id, beneficiary_id, amount, currency, occurred_at, payment_type,
-    		payer_requisite_id, beneficiary_requisite_id, note, is_active, created_at, updated_at
+    		payer_requisite_id, beneficiary_requisite_id, note, transaction_ref, is_active, created_at, updated_at
 		FROM incomes
 		WHERE id = $1`
 
 	var out Income
 	err := r.db.QueryRow(ctx, q, id).Scan(
 		&out.ID, &out.PayerID, &out.BeneficiaryID, &out.Amount, &out.Currency, &out.OccurredAt,
-		&out.PaymentType, &out.PayerRequisiteID, &out.BeneficiaryRequisiteID, &out.Note, &out.IsActive,
+		&out.PaymentType, &out.PayerRequisiteID, &out.BeneficiaryRequisiteID, &out.Note, &out.TransactionRef, &out.IsActive,
 		&out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -75,7 +75,7 @@ func (r *Repository) List(ctx context.Context) ([]Income, error) {
 	const q = `
 		SELECT
 			id, payer_id, beneficiary_id, amount, currency, occurred_at, payment_type,
-    		payer_requisite_id, beneficiary_requisite_id, note, is_active, created_at, updated_at
+    		payer_requisite_id, beneficiary_requisite_id, note, transaction_ref, is_active, created_at, updated_at
 		FROM incomes
 		ORDER BY occurred_at DESC`
 
@@ -90,7 +90,7 @@ func (r *Repository) List(ctx context.Context) ([]Income, error) {
 		var in Income
 		err := rows.Scan(
 			&in.ID, &in.PayerID, &in.BeneficiaryID, &in.Amount, &in.Currency, &in.OccurredAt,
-			&in.PaymentType, &in.PayerRequisiteID, &in.BeneficiaryRequisiteID, &in.Note, &in.IsActive,
+			&in.PaymentType, &in.PayerRequisiteID, &in.BeneficiaryRequisiteID, &in.Note, &in.TransactionRef, &in.IsActive,
 			&in.CreatedAt, &in.UpdatedAt,
 		)
 		if err != nil {

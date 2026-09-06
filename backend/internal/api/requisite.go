@@ -25,6 +25,7 @@ type createBankRequisiteRequest struct {
 	CorrespondentBankSwift *string    `json:"correspondent_bank_swift"`
 	IntermediaryBankName   *string    `json:"intermediary_bank_name"`
 	IntermediaryBankSwift  *string    `json:"intermediary_bank_swift"`
+	Note                   *string    `json:"note"`
 	ValidFrom              *time.Time `json:"valid_from"`
 }
 
@@ -39,6 +40,7 @@ type listCryptoRequisitesResponse struct {
 type createCryptoRequisiteRequest struct {
 	Network       string     `json:"network"`
 	WalletAddress string     `json:"wallet_address"`
+	Note          *string    `json:"note"`
 	ValidFrom     *time.Time `json:"valid_from"`
 }
 
@@ -90,6 +92,7 @@ func (s *Server) handleCreateBankRequisite() http.HandlerFunc {
 			CorrespondentBankSwift: req.CorrespondentBankSwift,
 			IntermediaryBankName:   req.IntermediaryBankName,
 			IntermediaryBankSwift:  req.IntermediaryBankSwift,
+			Note:                   req.Note,
 		}
 		if req.ValidFrom != nil {
 			br.ValidFrom = (*req.ValidFrom).UTC()
@@ -184,6 +187,7 @@ func (s *Server) handleCreateCryptoRequisite() http.HandlerFunc {
 			CompanyID:     companyID,
 			Network:       req.Network,
 			WalletAddress: req.WalletAddress,
+			Note:          req.Note,
 		}
 		if req.ValidFrom != nil {
 			cr.ValidFrom = (*req.ValidFrom).UTC()

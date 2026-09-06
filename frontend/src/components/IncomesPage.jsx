@@ -58,6 +58,7 @@ function IncomesPage() {
                         </span>
                         <span className="badge">{inc.payment_type}</span>
                         {inc.note && <span className="row-meta">{inc.note}</span>}
+                        {inc.transaction_ref && <span className="row-meta">ref: {inc.transaction_ref}</span>}
                     </li>
                 ))}
             </ul>

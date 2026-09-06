@@ -26,23 +26,23 @@ func (r *BankRepository) Create(ctx context.Context, br BankRequisite) (BankRequ
 		INSERT INTO bank_requisites (
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
 			correspondent_bank_name, correspondent_bank_swift, intermediary_bank_name, intermediary_bank_swift,
-			valid_from, valid_to
+			note, valid_from, valid_to
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING 
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
 			correspondent_bank_name, correspondent_bank_swift, intermediary_bank_name, intermediary_bank_swift,
-			valid_from, valid_to, created_at, updated_at`
+			note, valid_from, valid_to, created_at, updated_at`
 
 	var out BankRequisite
 	err := r.db.QueryRow(
 		ctx, q, br.ID, br.CompanyID, br.BeneficiaryName, br.AccountNumber,
 		br.BankName, br.BankSwift, br.BankAddress, br.CorrespondentBankName, br.CorrespondentBankSwift,
-		br.IntermediaryBankName, br.IntermediaryBankSwift, br.ValidFrom, br.ValidTo,
+		br.IntermediaryBankName, br.IntermediaryBankSwift, br.Note, br.ValidFrom, br.ValidTo,
 	).Scan(
 		&out.ID, &out.CompanyID, &out.BeneficiaryName, &out.AccountNumber,
 		&out.BankName, &out.BankSwift, &out.BankAddress, &out.CorrespondentBankName, &out.CorrespondentBankSwift,
-		&out.IntermediaryBankName, &out.IntermediaryBankSwift, &out.ValidFrom, &out.ValidTo,
+		&out.IntermediaryBankName, &out.IntermediaryBankSwift, &out.Note, &out.ValidFrom, &out.ValidTo,
 		&out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -57,7 +57,7 @@ func (r *BankRepository) GetByID(ctx context.Context, id uuid.UUID) (BankRequisi
 		SELECT 
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
 			correspondent_bank_name, correspondent_bank_swift, intermediary_bank_name, intermediary_bank_swift,
-			valid_from, valid_to, created_at, updated_at
+			note, valid_from, valid_to, created_at, updated_at
 		FROM bank_requisites
 		WHERE id = $1`
 
@@ -65,7 +65,7 @@ func (r *BankRepository) GetByID(ctx context.Context, id uuid.UUID) (BankRequisi
 	err := r.db.QueryRow(ctx, q, id).Scan(
 		&out.ID, &out.CompanyID, &out.BeneficiaryName, &out.AccountNumber,
 		&out.BankName, &out.BankSwift, &out.BankAddress, &out.CorrespondentBankName, &out.CorrespondentBankSwift,
-		&out.IntermediaryBankName, &out.IntermediaryBankSwift, &out.ValidFrom, &out.ValidTo,
+		&out.IntermediaryBankName, &out.IntermediaryBankSwift, &out.Note, &out.ValidFrom, &out.ValidTo,
 		&out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -83,7 +83,7 @@ func (r *BankRepository) ListByCompany(ctx context.Context, companyID uuid.UUID)
 		SELECT 
 			id, company_id, beneficiary_name, account_number, bank_name, bank_swift, bank_address,
 			correspondent_bank_name, correspondent_bank_swift, intermediary_bank_name, intermediary_bank_swift,
-			valid_from, valid_to, created_at, updated_at
+			note, valid_from, valid_to, created_at, updated_at
 		FROM bank_requisites
 		WHERE company_id = $1
 		ORDER BY valid_from DESC`
@@ -100,7 +100,7 @@ func (r *BankRepository) ListByCompany(ctx context.Context, companyID uuid.UUID)
 		err := rows.Scan(
 			&br.ID, &br.CompanyID, &br.BeneficiaryName, &br.AccountNumber,
 			&br.BankName, &br.BankSwift, &br.BankAddress, &br.CorrespondentBankName, &br.CorrespondentBankSwift,
-			&br.IntermediaryBankName, &br.IntermediaryBankSwift, &br.ValidFrom, &br.ValidTo,
+			&br.IntermediaryBankName, &br.IntermediaryBankSwift, &br.Note, &br.ValidFrom, &br.ValidTo,
 			&br.CreatedAt, &br.UpdatedAt,
 		)
 		if err != nil {

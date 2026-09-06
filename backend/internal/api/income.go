@@ -26,6 +26,7 @@ type createIncomeRequest struct {
 	PayerRequisiteID       uuid.UUID       `json:"payer_requisite_id"`
 	BeneficiaryRequisiteID uuid.UUID       `json:"beneficiary_requisite_id"`
 	Note                   *string         `json:"note"`
+	TransactionRef         *string         `json:"transaction_ref"`
 }
 
 func (s *Server) handleListIncomes() http.HandlerFunc {
@@ -87,6 +88,7 @@ func (s *Server) handleCreateIncome() http.HandlerFunc {
 			PayerRequisiteID:       req.PayerRequisiteID,
 			BeneficiaryRequisiteID: req.BeneficiaryRequisiteID,
 			Note:                   req.Note,
+			TransactionRef:         req.TransactionRef,
 		}
 
 		created, err := s.incomes.Create(r.Context(), in)
