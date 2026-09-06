@@ -50,11 +50,10 @@ function CurrencyRow({ currency, onSave, onDeactivate }) {
     }
 
     return (
-        <li className={currency.is_active ? "row" : "row row-inactive"}>
+        <li className={currency.is_active ? "row-currency" : "row-currency row-inactive"}>
             <span className="row-key">{currency.code}</span>
             <span>{currency.name}</span>
             <span className="row-meta">({currency.kind}, {currency.decimal_places} decimals)</span>
-            <span className="row-spacer" />
             {currency.is_active ? (
                 <div className="row-actions">
                     <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>

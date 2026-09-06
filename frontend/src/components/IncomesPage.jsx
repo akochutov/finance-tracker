@@ -48,7 +48,7 @@ function IncomesPage() {
             </div>
             <ul className="list">
                 {incomes.map((inc) => (
-                    <li key={inc.id} className="row">
+                    <li key={inc.id} className="row-income">
                         <span className="row-meta">{formatDate(inc.occurred_at)}</span>
                         <span className="row-key mono">{inc.amount} {inc.currency}</span>
                         <span>
@@ -57,8 +57,10 @@ function IncomesPage() {
                             {companiesById[inc.beneficiary_id] || inc.beneficiary_id}
                         </span>
                         <span className="badge">{inc.payment_type}</span>
-                        {inc.note && <span className="row-meta">{inc.note}</span>}
-                        {inc.transaction_ref && <span className="row-meta">ref: {inc.transaction_ref}</span>}
+                        <span className="row-meta">
+                            {inc.note}
+                            {inc.transaction_ref ? ` · ref: ${inc.transaction_ref}` : ""}
+                        </span>
                     </li>
                 ))}
             </ul>

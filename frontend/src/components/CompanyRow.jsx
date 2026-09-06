@@ -56,10 +56,9 @@ function CompanyRow({ company, onSave, onDeactivate }) {
     }
 
     return (
-        <li className={company.is_active ? "row" : "row row-inactive"}>
+        <li className={company.is_active ? "row-company" : "row-company row-inactive"}>
             <Link to={`/companies/${company.id}`} className="row-key">{company.name}</Link>
             <span className="row-meta">({company.tax_id || "-"}, {company.address || "-"}, {company.note || "-"})</span>
-            <span className="row-spacer" />
             {company.is_active ? (
                 <div className="row-actions">
                     <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>

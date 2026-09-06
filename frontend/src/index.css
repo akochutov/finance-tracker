@@ -1,19 +1,16 @@
 /* ============================================================
    Finance tracker — design system
-   Derived from the Design mockup. Self-contained: all colors,
-   typography and component styles live here as CSS variables +
-   classes. Components just add className="..." — no CSS edits.
+   Self-contained: tokens + component classes. Components just
+   add className="..." — no CSS edits needed.
    ============================================================ */
 
 /* ---- Design tokens ---------------------------------------- */
 :root {
-  /* Accent (calm business blue) */
   --color-accent:      #3b5bdb;
   --color-accent-700:  #2f49b0;
   --color-accent-300:  #b9c4f2;
   --color-accent-100:  #eef1fc;
 
-  /* Neutral scale */
   --color-text:        #1c2230;
   --color-neutral-800: #3a4254;
   --color-neutral-700: #5b6478;
@@ -21,35 +18,26 @@
   --color-neutral-500: #9198aa;
   --color-neutral-300: #d5d9e2;
 
-  /* Surfaces */
   --color-bg:          #f7f8fb;
   --color-surface:     #ffffff;
   --color-divider:     #e3e6ee;
 
-  /* Semantic */
   --color-danger:      #c0392b;
   --color-danger-bg:   #fdecea;
   --color-success:     #2e7d46;
 
-  /* Typography */
   --font-body:    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-heading: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono:    ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
 
-  /* Spacing / radius */
   --radius: 6px;
   --shadow-sm: 0 1px 2px rgba(20, 25, 40, 0.06);
   --shadow-md: 0 4px 14px rgba(20, 25, 40, 0.08);
 }
 
 /* ---- Reset / base ----------------------------------------- */
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  height: 100%;
-}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 
 body {
   margin: 0;
@@ -68,7 +56,6 @@ h1, h2, h3, h4, h5 {
   line-height: 1.15;
   margin: 0;
 }
-
 h1 { font-size: 30px; }
 h2 { font-size: 22px; }
 h3 { font-size: 18px; }
@@ -77,15 +64,11 @@ h5 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 
 p { margin: 6px 0 0; }
 
-a {
-  color: var(--color-accent-700);
-  text-decoration: none;
-}
+a { color: var(--color-accent-700); text-decoration: none; }
 a:hover { color: var(--color-accent); text-decoration: underline; }
 
 /* ============================================================
    Layout: sidebar + content
-   Put this on the outer wrapper in App.jsx:  <div class="app">
    ============================================================ */
 .app {
   display: grid;
@@ -111,8 +94,6 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
   padding: 0 20px 20px;
   border-bottom: 1px solid var(--color-divider);
 }
-
-/* Brand name + subtitle (each on its own line) */
 .sidebar-brand {
   font-family: var(--font-heading);
   font-weight: 800;
@@ -133,8 +114,6 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
   flex-direction: column;
   gap: 2px;
 }
-
-/* Each nav link (use <NavLink> from react-router) */
 .nav-link {
   display: block;
   padding: 9px 20px;
@@ -148,14 +127,12 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
   color: var(--color-text);
   text-decoration: none;
 }
-/* react-router adds .active to the current NavLink */
 .nav-link.active {
   background: var(--color-accent-100);
   border-left-color: var(--color-accent);
   color: var(--color-accent-700);
   font-weight: 700;
 }
-
 .sidebar-section-label {
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -167,10 +144,11 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
 /* ---- Main content area ------------------------------------ */
 .content {
   padding: 36px 44px 72px;
-  max-width: 1100px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Page header (title + subtitle) */
 .page-header {
   border-bottom: 1px solid var(--color-divider);
   padding-bottom: 16px;
@@ -191,29 +169,23 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
   padding: 20px;
   box-shadow: var(--shadow-sm);
 }
-
 .card + .card,
 .card + .list,
-.list + .card {
-  margin-top: 24px;
-}
+.list + .card { margin-top: 24px; }
 
 /* ============================================================
    Forms
    ============================================================ */
-.form-title {
-  margin: 0 0 16px;
-}
+.form-title { margin: 0 0 16px; }
 
-/* Row of fields that wraps nicely */
+/* Fixed 4 columns so every form has the same number of fields per row */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   align-items: end;
 }
 
-/* A labelled field */
 .field {
   display: flex;
   flex-direction: column;
@@ -226,7 +198,6 @@ a:hover { color: var(--color-accent); text-decoration: underline; }
   color: var(--color-neutral-700);
 }
 
-/* Inputs, selects */
 .input,
 input[type="text"],
 input[type="number"],
@@ -252,7 +223,6 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--color-accent-100);
 }
 
-/* Actions row (buttons aligned right) */
 .form-actions {
   display: flex;
   gap: 8px;
@@ -280,10 +250,7 @@ textarea:focus {
 .btn:hover { filter: brightness(0.97); }
 .btn:active { transform: translateY(1px); }
 
-.btn-primary {
-  background: var(--color-accent);
-  color: #fff;
-}
+.btn-primary { background: var(--color-accent); color: #fff; }
 .btn-primary:hover { background: var(--color-accent-700); filter: none; }
 
 .btn-secondary {
@@ -300,15 +267,10 @@ textarea:focus {
 }
 .btn-ghost:hover { background: var(--color-danger-bg); filter: none; }
 
-/* Small button variant for row actions */
-.btn-sm {
-  font-size: 13px;
-  padding: 5px 12px;
-  min-height: 30px;
-}
+.btn-sm { font-size: 13px; padding: 5px 12px; min-height: 30px; }
 
 /* ============================================================
-   Lists (rows of records)
+   Lists
    ============================================================ */
 .list {
   list-style: none;
@@ -316,11 +278,7 @@ textarea:focus {
   padding: 0;
   border-top: 1px solid var(--color-divider);
 }
-
-/* No bullet markers on any list item */
-.list li {
-  list-style: none;
-}
+.list li { list-style: none; }
 
 .list-header {
   display: flex;
@@ -329,7 +287,7 @@ textarea:focus {
   margin: 36px 0 10px;
 }
 
-/* A single record row */
+/* Generic flex row (fallback) */
 .row {
   display: flex;
   align-items: center;
@@ -337,11 +295,60 @@ textarea:focus {
   padding: 13px 12px;
   border-bottom: 1px solid var(--color-divider);
 }
-.row:hover {
+.row:hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
+
+/* ---- Grid rows: even, aligned columns per list type ------- */
+.row-currency,
+.row-company,
+.row-income,
+.row-requisite {
+  align-items: center;
+  gap: 16px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--color-divider);
+  list-style: none;
+}
+.row-currency:hover,
+.row-company:hover,
+.row-income:hover,
+.row-requisite:hover {
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
 
-/* Row in edit mode (highlighted) */
+/* code | name | meta | actions */
+.row-currency {
+  display: grid;
+  grid-template-columns: 80px 1fr 220px auto;
+}
+
+/* name | meta | actions */
+.row-company {
+  display: grid;
+  grid-template-columns: 260px 1fr auto;
+}
+
+/* date | amount | parties | type | description (note + ref) */
+.row-income {
+  display: grid;
+  grid-template-columns: 90px 130px 1.4fr 90px 1.6fr;
+}
+
+/* label | controls */
+.row-requisite {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+/* Badges inside grid rows: shrink to content, don't stretch the cell */
+.row-currency .badge,
+.row-company .badge,
+.row-income .badge,
+.row-requisite .badge {
+  justify-self: start;
+  width: fit-content;
+}
+
+/* Edit mode (form inside the row) — highlighted, not a grid */
 .row-editing {
   list-style: none;
   padding: 16px 12px;
@@ -349,31 +356,22 @@ textarea:focus {
   background: var(--color-accent-100);
 }
 
-/* Inactive / closed rows are muted */
-.row-inactive {
-  color: var(--color-neutral-500);
-}
+/* Inactive / closed rows muted (combine with a grid row class) */
+.row-inactive { color: var(--color-neutral-500); }
 .row-inactive:hover { background: transparent; }
 
-/* Push trailing content (buttons) to the right */
-.row-spacer { flex: 1; }
-
-/* Primary label inside a row (code, name) */
 .row-key {
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 15px;
 }
-.row-meta {
-  font-size: 13px;
-  color: var(--color-neutral-700);
-}
+.row-meta { font-size: 13px; color: var(--color-neutral-700); }
 
-/* Row actions group */
 .row-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 /* ============================================================
@@ -387,16 +385,13 @@ textarea:focus {
   border-radius: 999px;
   border: 1px solid var(--color-divider);
   color: var(--color-neutral-700);
+  white-space: nowrap;
+  display: inline-block;
 }
 .badge-inactive,
-.badge-closed {
-  color: var(--color-neutral-500);
-}
+.badge-closed { color: var(--color-neutral-500); }
 
-/* Monospace for money / numeric values */
-.mono {
-  font-family: var(--font-mono);
-}
+.mono { font-family: var(--font-mono); }
 
 /* ============================================================
    Error / message
@@ -410,23 +405,14 @@ textarea:focus {
   margin-bottom: 12px;
   font-size: 13px;
 }
-
-.loading {
-  color: var(--color-neutral-700);
-  padding: 24px 0;
-}
+.loading { color: var(--color-neutral-700); padding: 24px 0; }
 
 /* ============================================================
-   Sections on the company detail page
+   Company detail page
    ============================================================ */
-.section {
-  margin-top: 36px;
-}
-.section > h3 {
-  margin-bottom: 14px;
-}
+.section { margin-top: 36px; }
+.section > h3 { margin-bottom: 14px; }
 
-/* Detail meta strip (Tax ID / Address / Note) */
 .meta-strip {
   display: flex;
   flex-wrap: wrap;
