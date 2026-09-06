@@ -22,19 +22,19 @@ func NewCryptoRepository(db *pgxpool.Pool) *CryptoRepository {
 func (r *CryptoRepository) Create(ctx context.Context, cr CryptoRequisite) (CryptoRequisite, error) {
 	const q = `
 		INSERT INTO crypto_requisites (
-			id, company_id, network, wallet_address, valid_from, valid_to
+			id, company_id, network, wallet_address, note, valid_from, valid_to
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING
-			id, company_id, network, wallet_address, 
+			id, company_id, network, wallet_address, note, 
 			valid_from, valid_to, created_at, updated_at`
 
 	var out CryptoRequisite
 	err := r.db.QueryRow(
 		ctx, q, cr.ID, cr.CompanyID, cr.Network, cr.WalletAddress,
-		cr.ValidFrom, cr.ValidTo,
+		cr.Note, cr.ValidFrom, cr.ValidTo,
 	).Scan(
-		&out.ID, &out.CompanyID, &out.Network, &out.WalletAddress,
+		&out.ID, &out.CompanyID, &out.Network, &out.WalletAddress, &out.Note,
 		&out.ValidFrom, &out.ValidTo, &out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -46,13 +46,13 @@ func (r *CryptoRepository) Create(ctx context.Context, cr CryptoRequisite) (Cryp
 
 func (r *CryptoRepository) GetByID(ctx context.Context, id uuid.UUID) (CryptoRequisite, error) {
 	const q = `
-		SELECT id, company_id, network, wallet_address, valid_from, valid_to, created_at, updated_at
+		SELECT id, company_id, network, wallet_address, note, valid_from, valid_to, created_at, updated_at
 		FROM crypto_requisites
 		WHERE id = $1`
 
 	var out CryptoRequisite
 	err := r.db.QueryRow(ctx, q, id).Scan(
-		&out.ID, &out.CompanyID, &out.Network, &out.WalletAddress,
+		&out.ID, &out.CompanyID, &out.Network, &out.WalletAddress, &out.Note,
 		&out.ValidFrom, &out.ValidTo, &out.CreatedAt, &out.UpdatedAt,
 	)
 	if err != nil {
@@ -67,7 +67,7 @@ func (r *CryptoRepository) GetByID(ctx context.Context, id uuid.UUID) (CryptoReq
 
 func (r *CryptoRepository) ListByCompany(ctx context.Context, companyID uuid.UUID) ([]CryptoRequisite, error) {
 	const q = `
-		SELECT id, company_id, network, wallet_address, valid_from, valid_to, created_at, updated_at
+		SELECT id, company_id, network, wallet_address, note, valid_from, valid_to, created_at, updated_at
 		FROM crypto_requisites
 		WHERE company_id = $1
 		ORDER BY valid_from DESC`
@@ -82,7 +82,7 @@ func (r *CryptoRepository) ListByCompany(ctx context.Context, companyID uuid.UUI
 	for rows.Next() {
 		var cr CryptoRequisite
 		err := rows.Scan(
-			&cr.ID, &cr.CompanyID, &cr.Network, &cr.WalletAddress,
+			&cr.ID, &cr.CompanyID, &cr.Network, &cr.WalletAddress, &cr.Note,
 			&cr.ValidFrom, &cr.ValidTo, &cr.CreatedAt, &cr.UpdatedAt,
 		)
 		if err != nil {

@@ -18,6 +18,7 @@ type BankRequisite struct {
 	CorrespondentBankSwift *string    `json:"correspondent_bank_swift"`
 	IntermediaryBankName   *string    `json:"intermediary_bank_name"`
 	IntermediaryBankSwift  *string    `json:"intermediary_bank_swift"`
+	Note                   *string    `json:"note"`
 	ValidFrom              time.Time  `json:"valid_from"`
 	ValidTo                *time.Time `json:"valid_to"`
 	CreatedAt              time.Time  `json:"created_at"`
@@ -29,6 +30,7 @@ type CryptoRequisite struct {
 	CompanyID     uuid.UUID  `json:"company_id"`
 	Network       string     `json:"network"`
 	WalletAddress string     `json:"wallet_address"`
+	Note          *string    `json:"note"`
 	ValidFrom     time.Time  `json:"valid_from"`
 	ValidTo       *time.Time `json:"valid_to"`
 	CreatedAt     time.Time  `json:"created_at"`

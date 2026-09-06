@@ -11,6 +11,7 @@ function BankRequisiteForm({ companyId, onCreated }) {
     const [correspondentBankSwift, setCorrespondentBankSwift] = useState("");
     const [intermediaryBankName, setIntermediaryBankName] = useState("");
     const [intermediaryBankSwift, setIntermediaryBankSwift] = useState("");
+    const [note, setNote] = useState("");
     const [error, setError] = useState(null);
 
     async function handleSubmit(e) {
@@ -27,6 +28,7 @@ function BankRequisiteForm({ companyId, onCreated }) {
                 correspondent_bank_swift: correspondentBankSwift || null,
                 intermediary_bank_name: intermediaryBankName || null,
                 intermediary_bank_swift: intermediaryBankSwift || null,
+                note: note || null,
             });
             setBeneficiaryName("");
             setAccountNumber("");
@@ -37,6 +39,7 @@ function BankRequisiteForm({ companyId, onCreated }) {
             setCorrespondentBankSwift("");
             setIntermediaryBankName("");
             setIntermediaryBankSwift("");
+            setNote("");
             onCreated();
         } catch (err) {
             setError(err.message);
@@ -83,6 +86,10 @@ function BankRequisiteForm({ companyId, onCreated }) {
                 <div className="field">
                     <label>Intermediary Bank SWIFT</label>
                     <input className="input" value={intermediaryBankSwift} onChange={(e) => setIntermediaryBankSwift(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Note</label>
+                    <input className="input" placeholder="Optional comment" value={note} onChange={(e) => setNote(e.target.value)} />
                 </div>
             </div>
             <div className="form-actions">

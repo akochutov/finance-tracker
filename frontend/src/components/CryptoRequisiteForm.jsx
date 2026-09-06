@@ -4,6 +4,7 @@ import { createCryptoRequisite } from "../api/client";
 function CryptoRequisiteForm({ companyId, onCreated }) {
     const [network, setNetwork] = useState("");
     const [walletAddress, setWalletAddress] = useState("");
+    const [note, setNote] = useState("");
     const [error, setError] = useState(null);
 
     async function handleSubmit(e) {
@@ -13,9 +14,11 @@ function CryptoRequisiteForm({ companyId, onCreated }) {
             await createCryptoRequisite(companyId, {
                 network: network,
                 wallet_address: walletAddress,
+                note: note || null,
             });
             setNetwork("");
             setWalletAddress("");
+            setNote("");
             onCreated();
         } catch (err) {
             setError(err.message);
@@ -34,6 +37,10 @@ function CryptoRequisiteForm({ companyId, onCreated }) {
                 <div className="field">
                     <label>Wallet address</label>
                     <input className="input" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} />
+                </div>
+                <div className="field">
+                    <label>Note</label>
+                    <input className="input" placeholder="Optional comment" value={note} onChange={(e) => setNote(e.target.value)} />
                 </div>
             </div>
             <div className="form-actions">

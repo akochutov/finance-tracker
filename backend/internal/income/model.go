@@ -18,6 +18,7 @@ type Income struct {
 	PayerRequisiteID       uuid.UUID       `json:"payer_requisite_id"`
 	BeneficiaryRequisiteID uuid.UUID       `json:"beneficiary_requisite_id"`
 	Note                   *string         `json:"note"`
+	TransactionRef         *string         `json:"transaction_ref"`
 	IsActive               bool            `json:"is_active"`
 	CreatedAt              time.Time       `json:"created_at"`
 	UpdatedAt              time.Time       `json:"updated_at"`
