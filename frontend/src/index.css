@@ -318,19 +318,19 @@ textarea:focus {
 /* code | name | meta | actions */
 .row-currency {
   display: grid;
-  grid-template-columns: 80px 1fr 220px auto;
+  grid-template-columns: 130px 1fr 220px auto;
 }
 
 /* name | meta | actions */
 .row-company {
   display: grid;
-  grid-template-columns: 260px 1fr auto;
+  grid-template-columns: 340px 1fr auto;
 }
 
-/* date | amount | parties | type | description (note + ref) */
+/* date | amount | parties | type | details-toggle */
 .row-income {
   display: grid;
-  grid-template-columns: 90px 130px 1.4fr 90px 1.6fr;
+  grid-template-columns: 90px 140px 1fr 100px 90px;
 }
 
 /* label | controls */
@@ -372,6 +372,23 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
+}
+
+/* ---- Income accordion row --------------------------------- */
+.income-item { list-style: none; }
+
+.income-details {
+  padding: 6px 12px 14px 118px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+  font-size: 13px;
+  color: var(--color-neutral-700);
+}
+.income-details > div { margin-top: 4px; }
+.income-details a { word-break: break-all; }
+.detail-label {
+  font-weight: 700;
+  color: var(--color-neutral-800);
 }
 
 /* ============================================================

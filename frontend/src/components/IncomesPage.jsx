@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getIncomes, getCompanies } from "../api/client";
 import IncomeForm from "./IncomeForm";
+import IncomeRow from "./IncomeRow";
 
 function formatDate(isoString) {
     return new Date(isoString).toLocaleDateString();
@@ -48,20 +49,7 @@ function IncomesPage() {
             </div>
             <ul className="list">
                 {incomes.map((inc) => (
-                    <li key={inc.id} className="row-income">
-                        <span className="row-meta">{formatDate(inc.occurred_at)}</span>
-                        <span className="row-key mono">{inc.amount} {inc.currency}</span>
-                        <span>
-                            {companiesById[inc.payer_id] || inc.payer_id}
-                            {" → "}
-                            {companiesById[inc.beneficiary_id] || inc.beneficiary_id}
-                        </span>
-                        <span className="badge">{inc.payment_type}</span>
-                        <span className="row-meta">
-                            {inc.note}
-                            {inc.transaction_ref ? ` · ref: ${inc.transaction_ref}` : ""}
-                        </span>
-                    </li>
+                    <IncomeRow key={inc.id} income={inc} companiesById={companiesById} />
                 ))}
             </ul>
         </div>
