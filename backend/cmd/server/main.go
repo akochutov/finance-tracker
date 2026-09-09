@@ -48,8 +48,14 @@ func main() {
 	incomeService := income.NewService(incomeRepo, companyService, currencyService, bankRequisiteService, cryptoRequisiteService)
 
 	srv := &http.Server{
-		Addr:           cfg.HTTPAddr,
-		Handler:        api.New(db, currencyService, companyService, bankRequisiteService, cryptoRequisiteService, incomeService),
+		Addr: cfg.HTTPAddr,
+		Handler: api.New(db, api.Services{
+			Currency:        currencyService,
+			Company:         companyService,
+			BankRequisite:   bankRequisiteService,
+			CryptoRequisite: cryptoRequisiteService,
+			Income:          incomeService,
+		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,

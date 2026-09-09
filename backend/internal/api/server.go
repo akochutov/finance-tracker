@@ -23,22 +23,15 @@ type Server struct {
 	incomes          *income.Service
 }
 
-func New(
-	db *pgxpool.Pool,
-	currencies *currency.Service,
-	companies *company.Service,
-	bankRequisites *requisite.BankService,
-	cryptoRequisites *requisite.CryptoService,
-	incomes *income.Service,
-) *Server {
+func New(db *pgxpool.Pool, services Services) *Server {
 	s := &Server{
 		db:               db,
 		mux:              http.NewServeMux(),
-		currencies:       currencies,
-		companies:        companies,
-		bankRequisites:   bankRequisites,
-		cryptoRequisites: cryptoRequisites,
-		incomes:          incomes,
+		currencies:       services.Currency,
+		companies:        services.Company,
+		bankRequisites:   services.BankRequisite,
+		cryptoRequisites: services.CryptoRequisite,
+		incomes:          services.Income,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
