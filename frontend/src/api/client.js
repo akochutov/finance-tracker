@@ -126,3 +126,35 @@ export async function createIncome(income) {
         body: JSON.stringify(income),
     });
 }
+
+// --- Settings ---
+
+export async function getSettings() {
+    return request("/api/settings");
+}
+
+export async function updateSettings(baseCurrency) {
+    return request("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ base_currency: baseCurrency }),
+    });
+}
+
+// --- Exchange Rates ---
+
+export async function getExchangeRates(currency = "") {
+    const query = currency ? `?currency=${encodeURIComponent(currency)}` : "";
+    const data = await request(`/api/exchange-rates${query}`);
+    return data.exchange_rates;
+}
+
+export async function createExchangeRate({ currency, rateAt, rate }) {
+    return request("/api/exchange-rates", {
+        method: "POST",
+        body: JSON.stringify({
+            currency,
+            rate_at: rateAt,
+            rate,
+        }),
+    });
+}

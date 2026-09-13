@@ -7,8 +7,10 @@ import (
 
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/requisite"
+	"github.com/akochutov/finance-tracker/internal/settings"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,24 +23,21 @@ type Server struct {
 	bankRequisites   *requisite.BankService
 	cryptoRequisites *requisite.CryptoService
 	incomes          *income.Service
+	settings         *settings.Service
+	exchangeRates    *exchangerate.Service
 }
 
-func New(
-	db *pgxpool.Pool,
-	currencies *currency.Service,
-	companies *company.Service,
-	bankRequisites *requisite.BankService,
-	cryptoRequisites *requisite.CryptoService,
-	incomes *income.Service,
-) *Server {
+func New(db *pgxpool.Pool, services Services) *Server {
 	s := &Server{
 		db:               db,
 		mux:              http.NewServeMux(),
-		currencies:       currencies,
-		companies:        companies,
-		bankRequisites:   bankRequisites,
-		cryptoRequisites: cryptoRequisites,
-		incomes:          incomes,
+		currencies:       services.Currency,
+		companies:        services.Company,
+		bankRequisites:   services.BankRequisite,
+		cryptoRequisites: services.CryptoRequisite,
+		incomes:          services.Income,
+		settings:         services.Settings,
+		exchangeRates:    services.ExchangeRate,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -75,6 +74,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/incomes", s.handleListIncomes())
 	s.mux.HandleFunc("GET /api/incomes/{id}", s.handleGetIncome())
 	s.mux.HandleFunc("POST /api/incomes", s.handleCreateIncome())
+
+	s.mux.HandleFunc("GET /api/settings", s.handleGetSettings())
+	s.mux.HandleFunc("PUT /api/settings", s.handleUpdateSettings())
+
+	s.mux.HandleFunc("GET /api/exchange-rates", s.handleListExchangeRates())
+	s.mux.HandleFunc("POST /api/exchange-rates", s.handleCreateExchangeRate())
+	s.mux.HandleFunc("GET /api/convert", s.handleConvert())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

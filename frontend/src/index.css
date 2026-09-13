@@ -301,7 +301,8 @@ textarea:focus {
 .row-currency,
 .row-company,
 .row-income,
-.row-requisite {
+.row-requisite,
+.row-exchange-rate {
   align-items: center;
   gap: 16px;
   padding: 13px 12px;
@@ -311,7 +312,8 @@ textarea:focus {
 .row-currency:hover,
 .row-company:hover,
 .row-income:hover,
-.row-requisite:hover {
+.row-requisite:hover,
+.row-exchange-rate:hover {
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
 
@@ -330,7 +332,7 @@ textarea:focus {
 /* date | amount | parties | type | details-toggle */
 .row-income {
   display: grid;
-  grid-template-columns: 90px 140px 1fr 100px 90px;
+  grid-template-columns: 90px 180px 1fr 100px 90px;
 }
 
 /* label | controls */
@@ -339,11 +341,18 @@ textarea:focus {
   grid-template-columns: 1fr auto;
 }
 
+/* currency | rate | as-of date | source */
+.row-exchange-rate {
+  display: grid;
+  grid-template-columns: 100px 1fr 200px 120px;
+}
+
 /* Badges inside grid rows: shrink to content, don't stretch the cell */
 .row-currency .badge,
 .row-company .badge,
 .row-income .badge,
-.row-requisite .badge {
+.row-requisite .badge,
+.row-exchange-rate .badge {
   justify-self: start;
   width: fit-content;
 }
@@ -445,4 +454,62 @@ textarea:focus {
 .meta-strip .meta-item .meta-value {
   font-size: 14px;
   margin-top: 4px;
+}
+
+/* ============================================================
+   Settings + exchange rates
+   ============================================================ */
+
+/* ---- Settings: single labelled control -------------------- */
+.settings-field {
+  max-width: 420px;
+  margin-top: 20px;
+}
+.settings-field label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+  margin-bottom: 6px;
+}
+.settings-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-neutral-700);
+}
+
+/* ---- Status messages (pair with .error) ------------------- */
+.status-ok,
+.status-error {
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.status-ok {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+}
+.status-error {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+}
+
+/* ---- Exchange-rates list filter --------------------------- */
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 24px 0 4px;
+}
+.filter-bar .field {
+  min-width: 220px;
+}
+
+/* rate value column reads as a number */
+.rate-value {
+  font-family: var(--font-mono);
 }

@@ -10,9 +10,11 @@ import (
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/config"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
 	"github.com/akochutov/finance-tracker/internal/requisite"
+	"github.com/akochutov/finance-tracker/internal/settings"
 )
 
 func main() {
@@ -47,9 +49,23 @@ func main() {
 	incomeRepo := income.NewRepository(db)
 	incomeService := income.NewService(incomeRepo, companyService, currencyService, bankRequisiteService, cryptoRequisiteService)
 
+	settingsRepo := settings.NewRepository(db)
+	settingsService := settings.NewService(settingsRepo, currencyService)
+
+	exchangeRateRepo := exchangerate.NewRepository(db)
+	exchangeRateService := exchangerate.NewService(exchangeRateRepo)
+
 	srv := &http.Server{
-		Addr:           cfg.HTTPAddr,
-		Handler:        api.New(db, currencyService, companyService, bankRequisiteService, cryptoRequisiteService, incomeService),
+		Addr: cfg.HTTPAddr,
+		Handler: api.New(db, api.Services{
+			Currency:        currencyService,
+			Company:         companyService,
+			BankRequisite:   bankRequisiteService,
+			CryptoRequisite: cryptoRequisiteService,
+			Income:          incomeService,
+			Settings:        settingsService,
+			ExchangeRate:    exchangeRateService,
+		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
