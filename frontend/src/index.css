@@ -341,10 +341,12 @@ textarea:focus {
   grid-template-columns: 1fr auto;
 }
 
-/* currency | rate | as-of date | source */
+/* currency | rate | as-of date | source
+   date column holds a full RFC3339 timestamp with microseconds,
+   so it needs room not to wrap. */
 .row-exchange-rate {
   display: grid;
-  grid-template-columns: 100px 1fr 200px 120px;
+  grid-template-columns: 100px 1fr 280px 120px;
 }
 
 /* Badges inside grid rows: shrink to content, don't stretch the cell */
@@ -498,6 +500,14 @@ textarea:focus {
   border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
 }
 
+/* When a status message sits inline next to a button in .form-actions,
+   drop the top margin so it aligns with the button row. */
+.form-actions .status-ok,
+.form-actions .status-error {
+  margin-top: 0;
+  align-self: center;
+}
+
 /* ---- Exchange-rates list filter --------------------------- */
 .filter-bar {
   display: flex;
@@ -512,4 +522,32 @@ textarea:focus {
 /* rate value column reads as a number */
 .rate-value {
   font-family: var(--font-mono);
+}
+
+/* ---- Rate source cards (provider config) ------------------ */
+/* Card header: class title on the left, "Fetch now" on the right. */
+.rate-source-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.rate-source-head .form-title {
+  margin: 0;
+}
+
+/* Small helper text under a field (interval hint, URL placeholders). */
+.field-hint {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+  margin-top: 2px;
+}
+
+/* Align fields in a rate-source card by their TOP, not their bottom.
+   Some fields carry a .field-hint underneath (e.g. the poll interval);
+   with the global "align-items: end" that hint would push its input up
+   out of line with its neighbours. Top-alignment keeps every input on
+   the same line and lets the hints hang below. */
+.card .form-grid {
+  align-items: start;
 }

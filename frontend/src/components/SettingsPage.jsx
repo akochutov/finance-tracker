@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getSettings, updateSettings, getCurrencies } from "../api/client";
+import RateSourceSettings from "./RateSourceSettings";
 
 function SettingsPage() {
     const [baseCurrency, setBaseCurrency] = useState("");
@@ -9,12 +10,13 @@ function SettingsPage() {
 
     useEffect(() => {
         Promise.all([getSettings(), getCurrencies()])
-            .then(([SettingsPage, currencies]) => {
-                setBaseCurrency(SettingsPage.base_currency);
+            .then(([settings, currencies]) => {
+                setBaseCurrency(settings.base_currency);
                 setFiatCurrencies(
                     currencies.filter((c) => c.kind === "fiat" && c.is_active)
                 );
             })
+            .catch((err) => setError(err.message));
     }, []);
 
     async function handleChange(event) {
@@ -63,6 +65,7 @@ function SettingsPage() {
                     {status.text}
                 </p>
             )}
+            <RateSourceSettings />
         </div>
     );
 }
