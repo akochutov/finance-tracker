@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/akochutov/finance-tracker/internal/api"
@@ -13,7 +17,10 @@ import (
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
+	"github.com/akochutov/finance-tracker/internal/ratefetch"
+	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
+	"github.com/akochutov/finance-tracker/internal/scheduler"
 	"github.com/akochutov/finance-tracker/internal/settings"
 )
 
@@ -24,7 +31,8 @@ func main() {
 		log.Fatalf("loading config: %v", err)
 	}
 
-	ctx := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	// --- Database connect ---
 	db, err := postgres.New(ctx, cfg.DatabaseURL)
@@ -55,6 +63,18 @@ func main() {
 	exchangeRateRepo := exchangerate.NewRepository(db)
 	exchangeRateService := exchangerate.NewService(exchangeRateRepo)
 
+	rateSourceRepo := ratesource.NewRepository(db)
+	rateSourceService := ratesource.NewService(rateSourceRepo)
+
+	rateRegistry := exchangerate.NewRegistry()
+
+	rateFetchService := ratefetch.NewService(
+		currencyService, rateSourceService, rateRegistry, exchangeRateService,
+	)
+
+	sched := scheduler.New(rateFetchService, rateSourceService)
+	sched.Start(ctx)
+
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: api.New(db, api.Services{
@@ -65,11 +85,31 @@ func main() {
 			Income:          incomeService,
 			Settings:        settingsService,
 			ExchangeRate:    exchangeRateService,
+			RateSource:      rateSourceService,
+			RateFetch:       rateFetchService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	go func() {
+		log.Printf("listening on %s", cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("http server: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	stop()
+	log.Println("shutting down...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("http shutdown: %v", err)
+	}
+
+	sched.Wait()
+	log.Println("stopped")
 }
