@@ -158,3 +158,28 @@ export async function createExchangeRate({ currency, rateAt, rate }) {
         }),
     });
 }
+
+// --- Rate sources (provider config) ---
+
+export async function getRateSources() {
+    const data = await request("/api/rate-sources");
+    return data.rate_sources;
+}
+
+export async function getRateProviders() {
+    const data = await request("/api/rate-providers");
+    return data.providers;
+}
+
+export async function updateRateSource(kind, fields) {
+    return request(`/api/rate-sources/${kind}`, {
+        method: "PUT",
+        body: JSON.stringify(fields),
+    });
+}
+
+export async function fetchRates(kind) {
+    return request(`/api/rate-sources/${kind}/fetch`, {
+        method: "POST",
+    });
+}
