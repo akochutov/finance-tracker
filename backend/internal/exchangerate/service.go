@@ -17,17 +17,20 @@ func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) RecordManual(ctx context.Context, currency string, rateAt time.Time, rate decimal.Decimal) (Rate, error) {
+func (s *Service) Record(ctx context.Context, currency, source string, rate decimal.Decimal, rateAt time.Time) (Rate, error) {
 	if currency == Pivot {
 		return Rate{}, ErrPivotRate
 	}
-
 	return s.repo.Upsert(ctx, Rate{
 		Currency: currency,
-		Source:   SourceManual,
+		Source:   source,
 		RateAt:   rateAt,
 		Rate:     rate,
 	})
+}
+
+func (s *Service) RecordManual(ctx context.Context, currency string, rateAt time.Time, rate decimal.Decimal) (Rate, error) {
+	return s.Record(ctx, currency, SourceManual, rate, rateAt)
 }
 
 func (s *Service) List(ctx context.Context, currency string) ([]Rate, error) {

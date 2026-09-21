@@ -13,6 +13,8 @@ import (
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
+	"github.com/akochutov/finance-tracker/internal/ratefetch"
+	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/settings"
 )
@@ -55,6 +57,15 @@ func main() {
 	exchangeRateRepo := exchangerate.NewRepository(db)
 	exchangeRateService := exchangerate.NewService(exchangeRateRepo)
 
+	rateSourceRepo := ratesource.NewRepository(db)
+	rateSourceService := ratesource.NewService(rateSourceRepo)
+
+	rateRegistry := exchangerate.NewRegistry()
+
+	rateFetchService := ratefetch.NewService(
+		currencyService, rateSourceService, rateRegistry, exchangeRateService,
+	)
+
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: api.New(db, api.Services{
@@ -65,6 +76,8 @@ func main() {
 			Income:          incomeService,
 			Settings:        settingsService,
 			ExchangeRate:    exchangeRateService,
+			RateSource:      rateSourceService,
+			RateFetch:       rateFetchService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
