@@ -93,8 +93,8 @@ func defaultFor(kind string) RateSource {
 	case KindCrypto:
 		return RateSource{
 			Kind:           KindCrypto,
-			Source:         "",
-			URLTemplate:    "",
+			Source:         "coinbase",
+			URLTemplate:    "https://api.coinbase.com/v2/prices/{base}-{quote}/spot",
 			PollInterval:   900,
 			RequestTimeout: 10,
 		}

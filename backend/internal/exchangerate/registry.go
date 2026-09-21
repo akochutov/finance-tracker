@@ -18,6 +18,9 @@ func NewRegistry() *Registry {
 			"frankfurter": func(urlTemplate string, timeout time.Duration) RateProvider {
 				return NewFrankfurterProvider(urlTemplate, timeout)
 			},
+			"coinbase": func(urlTemplate string, timeout time.Duration) RateProvider {
+				return NewCoinbaseProvider(urlTemplate, timeout)
+			},
 		},
 	}
 }
