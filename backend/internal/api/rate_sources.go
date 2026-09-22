@@ -55,7 +55,6 @@ func (s *Server) handleListRateProviders() http.HandlerFunc {
 	}
 }
 
-// PUT /api/rate-sources/{kind}
 func (s *Server) handleSaveRateSource() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		kind := strings.ToLower(strings.TrimSpace(r.PathValue("kind")))
@@ -137,5 +136,47 @@ func (s *Server) handleFetchRates() http.HandlerFunc {
 			Skipped: result.Skipped,
 			Errors:  errsOut,
 		})
+	}
+}
+
+func (s *Server) handleStartBackfill() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		kind := strings.ToLower(strings.TrimSpace(r.PathValue("kind")))
+
+		job, err := s.backfiller.Start(kind)
+		if err != nil {
+			switch {
+			case errors.Is(err, ratesource.ErrInvalidKind),
+				errors.Is(err, ratefetch.ErrNoProvider),
+				errors.Is(err, ratefetch.ErrNoBackfillStart),
+				errors.Is(err, exchangerate.ErrUnknownProvider):
+				writeError(w, http.StatusBadRequest, err.Error())
+			case errors.Is(err, ratefetch.ErrBackfillRunning):
+				writeError(w, http.StatusConflict, err.Error())
+			default:
+				log.Printf("start backfill: %v", err)
+				writeError(w, http.StatusInternalServerError, "failed to start backfill")
+			}
+			return
+		}
+		writeJSON(w, http.StatusAccepted, job)
+	}
+}
+
+func (s *Server) handleBackfillStatus() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		kind := strings.ToLower(strings.TrimSpace(r.PathValue("kind")))
+
+		job, err := s.backfiller.Status(kind)
+		if err != nil {
+			if errors.Is(err, ratefetch.ErrNoBackfillJob) {
+				writeError(w, http.StatusNotFound, "no backfill has been run for this class")
+				return
+			}
+			log.Printf("backfill status: %v", err)
+			writeError(w, http.StatusInternalServerError, "failed to read backfill status")
+			return
+		}
+		writeJSON(w, http.StatusOK, job)
 	}
 }

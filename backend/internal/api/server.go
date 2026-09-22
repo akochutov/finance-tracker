@@ -31,6 +31,7 @@ type Server struct {
 	rateSources      *ratesource.Service
 	rateFetch        *ratefetch.Service
 	dashboard        *dashboard.Service
+	backfiller       *ratefetch.Backfiller
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -47,6 +48,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		rateSources:      services.RateSource,
 		rateFetch:        services.RateFetch,
 		dashboard:        services.Dashboard,
+		backfiller:       services.Backfiller,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -97,6 +99,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/rate-providers", s.handleListRateProviders())
 
 	s.mux.HandleFunc("GET /api/dashboard", s.handleGetDashboard())
+
+	s.mux.HandleFunc("POST /api/rate-sources/{kind}/backfill", s.handleStartBackfill())
+	s.mux.HandleFunc("GET /api/rate-sources/{kind}/backfill", s.handleBackfillStatus())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

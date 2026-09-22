@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 )
 
 const MinPollIntervalSeconds = 900
@@ -78,6 +79,14 @@ func (s *Service) Save(ctx context.Context, src RateSource) (RateSource, error) 
 	}
 
 	return s.repo.Upsert(ctx, src)
+}
+
+func (s *Service) SetBackfillStart(ctx context.Context, kind string, start time.Time) error {
+	if kind != KindFiat && kind != KindCrypto {
+		return ErrInvalidKind
+	}
+
+	return s.repo.UpdateBackfillStart(ctx, kind, start)
 }
 
 func defaultFor(kind string) RateSource {
