@@ -184,6 +184,16 @@ export async function fetchRates(kind) {
     });
 }
 
+export async function startBackfill(kind) {
+    return request(`/api/rate-sources/${kind}/backfill`, {
+        method: "POST",
+    });
+}
+
+export async function getBackfillStatus(kind) {
+    return request(`/api/rate-sources/${kind}/backfill`);
+}
+
 // --- Dashboard ---
 
 export async function getDashboard() {
