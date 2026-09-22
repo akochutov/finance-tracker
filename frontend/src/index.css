@@ -543,11 +543,115 @@ textarea:focus {
   margin-top: 2px;
 }
 
-/* Align fields in a rate-source card by their TOP, not their bottom.
-   Some fields carry a .field-hint underneath (e.g. the poll interval);
-   with the global "align-items: end" that hint would push its input up
-   out of line with its neighbours. Top-alignment keeps every input on
-   the same line and lets the hints hang below. */
+/* Align fields in a rate-source card by their TOP, not their bottom. */
 .card .form-grid {
   align-items: start;
+}
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
+.dash-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;   /* both cards share the row's height */
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dash-row-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+/* The grid's own gap handles spacing between cards. Cancel the global
+   ".card + .card { margin-top }" rule, which otherwise lands on the second
+   card in a row, pushing it down and breaking equal-height alignment. */
+.dash-row-2 > .card { margin-top: 0; }
+
+/* Top row: total + records, forced to equal height with centered content */
+.dash-total-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.dash-total-label { font-size: 13px; color: var(--color-neutral-700); }
+.dash-total-value { font-size: 40px; font-weight: 800; line-height: 1.1; margin-top: 8px; letter-spacing: -0.02em; }
+.dash-total-sub { font-size: 13px; color: var(--color-neutral-500); margin-top: 6px; }
+
+.dash-records {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 11px;
+}
+.dash-records .rec-row { display: flex; justify-content: space-between; font-size: 13px; }
+.dash-records .rec-row .k { color: var(--color-neutral-700); }
+.dash-records .rec-row .v { font-weight: 700; }
+
+/* Bottom metric cards — bigger numbers */
+.metric-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.metric-label { font-size: 12px; color: var(--color-neutral-700); line-height: 1.35; }
+.metric-value { font-size: 24px; font-weight: 800; margin-top: 8px; letter-spacing: -0.01em; }
+
+.chart-title { font-size: 13px; color: var(--color-neutral-700); margin-bottom: 14px; }
+
+/* Category bars (by currency / by company). flex:1 with a max-width so a
+   few categories stay column-shaped and centered instead of stretching
+   into one giant block; many categories still fill the width evenly.
+   Labels mirror the same flex+max-width so they line up under the bars. */
+.bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 24px;
+  height: 120px;
+}
+.bars .bar {
+  flex: 1 1 0;
+  max-width: 96px;
+  background: var(--color-accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+}
+.bar-labels {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 8px;
+}
+.bar-labels .bl {
+  flex: 1 1 0;
+  max-width: 96px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+.bar-labels .bl .blv { color: var(--color-neutral-500); }
+
+/* Monthly bars: many thin bars filling the full width */
+.month-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 150px;
+}
+.month-bars .bar {
+  flex: 1;
+  background: var(--color-accent);
+  border-radius: 2px 2px 0 0;
+  min-height: 1px;
+}
+.month-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-neutral-500);
 }

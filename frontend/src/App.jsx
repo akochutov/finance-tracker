@@ -5,17 +5,7 @@ import CompanyPage from "./components/CompanyPage";
 import IncomesPage from "./components/IncomesPage";
 import SettingsPage from "./components/SettingsPage";
 import ExchangeRatesPage from "./components/ExchangeRatesPage";
-
-function HomePage() {
-  return (
-    <div>
-      <div className="page-header">
-        <h1>Dashboard</h1>
-        <p>Coming soon.</p>
-      </div>
-    </div>
-  );
-}
+import DashboardPage from "./components/DashboardPage";
 
 function App() {
   return (
@@ -44,7 +34,7 @@ function App() {
 
       <main className="content">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/currencies" element={<CurrenciesPage />} />
           <Route path="/companies" element={<CompaniesPage />} />
           <Route path="/companies/:id" element={<CompanyPage />} />
