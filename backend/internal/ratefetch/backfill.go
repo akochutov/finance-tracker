@@ -18,6 +18,8 @@ const BackfillFailed = "failed"
 
 const dateLayout = "2006-01-02"
 
+const cryptoThrottle = 150 * time.Millisecond
+
 type BackfillJob struct {
 	Kind            string     `json:"kind"`
 	Status          string     `json:"status"`
@@ -129,24 +131,37 @@ func (b *Backfiller) run(kind string, provider exchangerate.RateProvider, source
 		}
 	}
 
+	skipWeekends := kind == ratesource.KindFiat
+	throttle := time.Duration(0)
+	if kind == ratesource.KindCrypto {
+		throttle = cryptoThrottle
+	}
+
 	b.setTotal(kind, int(to.Sub(from).Hours()/24)+1)
 
 	for d := from; !d.After(to); d = d.AddDate(0, 0, 1) {
 		weekend := d.Weekday() == time.Saturday || d.Weekday() == time.Sunday
-		if !weekend {
+		if !(skipWeekends && weekend) {
 			for _, code := range targets {
 				b.setCurrent(kind, code, d)
 
 				fr, err := provider.FetchRate(ctx, code, d)
 				if err != nil {
 					b.recordErr(kind, fmt.Errorf("%s @ %s: %w", code, d.Format(dateLayout), err))
-					continue
-				}
-				if _, err := b.rates.Record(ctx, code, source, fr.Rate, fr.RateAt); err != nil {
+				} else if _, err := b.rates.Record(ctx, code, source, fr.Rate, fr.RateAt); err != nil {
 					b.recordErr(kind, fmt.Errorf("store %s @ %s: %w", code, d.Format(dateLayout), err))
-					continue
+				} else {
+					b.incStored(kind)
 				}
-				b.incStored(kind)
+
+				if throttle > 0 {
+					select {
+					case <-ctx.Done():
+						b.finish(kind, ctx.Err())
+						return
+					case <-time.After(throttle):
+					}
+				}
 			}
 		}
 
