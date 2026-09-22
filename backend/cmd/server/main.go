@@ -14,6 +14,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/config"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
@@ -72,6 +73,10 @@ func main() {
 		currencyService, rateSourceService, rateRegistry, exchangeRateService,
 	)
 
+	dashboardService := dashboard.NewService(
+		incomeService, companyService, exchangeRateService, settingsService,
+	)
+
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
 
@@ -87,6 +92,7 @@ func main() {
 			ExchangeRate:    exchangeRateService,
 			RateSource:      rateSourceService,
 			RateFetch:       rateFetchService,
+			Dashboard:       dashboardService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

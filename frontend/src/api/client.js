@@ -183,3 +183,9 @@ export async function fetchRates(kind) {
         method: "POST",
     });
 }
+
+// --- Dashboard ---
+
+export async function getDashboard() {
+    return request("/api/dashboard");
+}

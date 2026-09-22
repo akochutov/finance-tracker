@@ -7,6 +7,7 @@ import (
 
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
+	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
@@ -29,6 +30,7 @@ type Server struct {
 	exchangeRates    *exchangerate.Service
 	rateSources      *ratesource.Service
 	rateFetch        *ratefetch.Service
+	dashboard        *dashboard.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -44,6 +46,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		exchangeRates:    services.ExchangeRate,
 		rateSources:      services.RateSource,
 		rateFetch:        services.RateFetch,
+		dashboard:        services.Dashboard,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -92,6 +95,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("PUT /api/rate-sources/{kind}", s.handleSaveRateSource())
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/fetch", s.handleFetchRates())
 	s.mux.HandleFunc("GET /api/rate-providers", s.handleListRateProviders())
+
+	s.mux.HandleFunc("GET /api/dashboard", s.handleGetDashboard())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
