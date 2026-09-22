@@ -655,3 +655,44 @@ textarea:focus {
   font-size: 12px;
   color: var(--color-neutral-500);
 }
+
+/* ---- Backfill panel --------------------------------------- */
+.backfill {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-divider);
+}
+.backfill-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.backfill-title {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.backfill-status { margin-top: 12px; }
+.backfill-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-accent-100);
+  overflow: hidden;
+}
+.backfill-bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.backfill-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-neutral-700);
+}
+.backfill-counts { color: var(--color-neutral-500); white-space: nowrap; }

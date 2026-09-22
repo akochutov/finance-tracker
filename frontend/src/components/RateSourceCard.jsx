@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { updateRateSource, fetchRates } from "../api/client";
+import BackfillPanel from "./BackfillPanel";
 
 function toDateInput(value) {
     if (!value) return "";
@@ -153,6 +154,7 @@ function RateSourceCard({ source, providers, onChanged }) {
                     Save
                 </button>
             </div>
+            <BackfillPanel kind={source.kind} />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -99,4 +100,17 @@ func (r *Repository) Upsert(ctx context.Context, s RateSource) (RateSource, erro
 	}
 
 	return out, nil
+}
+
+func (r *Repository) UpdateBackfillStart(ctx context.Context, kind string, start time.Time) error {
+	const q = `UPDATE rate_sources SET backfill_start = $1, updated_at = now() WHERE kind = $2`
+	tag, err := r.db.Exec(ctx, q, start, kind)
+	if err != nil {
+		return fmt.Errorf("update backfill_start %q: %w", kind, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }

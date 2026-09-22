@@ -77,6 +77,10 @@ func main() {
 		incomeService, companyService, exchangeRateService, settingsService,
 	)
 
+	bacfiller := ratefetch.NewBackfiller(
+		currencyService, rateSourceService, rateRegistry, exchangeRateService,
+	)
+
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
 
@@ -93,6 +97,7 @@ func main() {
 			RateSource:      rateSourceService,
 			RateFetch:       rateFetchService,
 			Dashboard:       dashboardService,
+			Backfiller:      bacfiller,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

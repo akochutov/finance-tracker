@@ -23,4 +23,5 @@ type Services struct {
 	RateSource      *ratesource.Service
 	RateFetch       *ratefetch.Service
 	Dashboard       *dashboard.Service
+	Backfiller      *ratefetch.Backfiller
 }
