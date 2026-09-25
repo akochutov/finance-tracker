@@ -6,6 +6,7 @@ import IncomesPage from "./components/IncomesPage";
 import SettingsPage from "./components/SettingsPage";
 import ExchangeRatesPage from "./components/ExchangeRatesPage";
 import DashboardPage from "./components/DashboardPage";
+import ExpenseCategoriesPage from "./components/ExpenseCategoriesPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <NavLink to="/currencies" className="nav-link">Currencies</NavLink>
           <NavLink to="/companies" className="nav-link">Companies</NavLink>
           <NavLink to="/incomes" className="nav-link">Incomes</NavLink>
+          <NavLink to="/expense-categories" className="nav-link">Expense categories</NavLink>
           <NavLink to="/settings" className="nav-link">Settings</NavLink>
           <NavLink to="/exchange-rates" className="nav-link">Exchange Rates</NavLink>
 
@@ -39,6 +41,7 @@ function App() {
           <Route path="/companies" element={<CompaniesPage />} />
           <Route path="/companies/:id" element={<CompanyPage />} />
           <Route path="/incomes" element={<IncomesPage />} />
+          <Route path="/expense-categories" element={<ExpenseCategoriesPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/exchange-rates" element={<ExchangeRatesPage />} />
         </Routes>

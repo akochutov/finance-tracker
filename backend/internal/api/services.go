@@ -5,6 +5,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
+	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
@@ -24,4 +25,5 @@ type Services struct {
 	RateFetch       *ratefetch.Service
 	Dashboard       *dashboard.Service
 	Backfiller      *ratefetch.Backfiller
+	ExpenseCategory *expensecategory.Service
 }

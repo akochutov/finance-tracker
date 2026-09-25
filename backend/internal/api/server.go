@@ -9,6 +9,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
+	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
@@ -18,37 +19,39 @@ import (
 )
 
 type Server struct {
-	db               *pgxpool.Pool
-	mux              *http.ServeMux
-	handler          http.Handler
-	currencies       *currency.Service
-	companies        *company.Service
-	bankRequisites   *requisite.BankService
-	cryptoRequisites *requisite.CryptoService
-	incomes          *income.Service
-	settings         *settings.Service
-	exchangeRates    *exchangerate.Service
-	rateSources      *ratesource.Service
-	rateFetch        *ratefetch.Service
-	dashboard        *dashboard.Service
-	backfiller       *ratefetch.Backfiller
+	db                *pgxpool.Pool
+	mux               *http.ServeMux
+	handler           http.Handler
+	currencies        *currency.Service
+	companies         *company.Service
+	bankRequisites    *requisite.BankService
+	cryptoRequisites  *requisite.CryptoService
+	incomes           *income.Service
+	settings          *settings.Service
+	exchangeRates     *exchangerate.Service
+	rateSources       *ratesource.Service
+	rateFetch         *ratefetch.Service
+	dashboard         *dashboard.Service
+	backfiller        *ratefetch.Backfiller
+	expenseCategories *expensecategory.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
 	s := &Server{
-		db:               db,
-		mux:              http.NewServeMux(),
-		currencies:       services.Currency,
-		companies:        services.Company,
-		bankRequisites:   services.BankRequisite,
-		cryptoRequisites: services.CryptoRequisite,
-		incomes:          services.Income,
-		settings:         services.Settings,
-		exchangeRates:    services.ExchangeRate,
-		rateSources:      services.RateSource,
-		rateFetch:        services.RateFetch,
-		dashboard:        services.Dashboard,
-		backfiller:       services.Backfiller,
+		db:                db,
+		mux:               http.NewServeMux(),
+		currencies:        services.Currency,
+		companies:         services.Company,
+		bankRequisites:    services.BankRequisite,
+		cryptoRequisites:  services.CryptoRequisite,
+		incomes:           services.Income,
+		settings:          services.Settings,
+		exchangeRates:     services.ExchangeRate,
+		rateSources:       services.RateSource,
+		rateFetch:         services.RateFetch,
+		dashboard:         services.Dashboard,
+		backfiller:        services.Backfiller,
+		expenseCategories: services.ExpenseCategory,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -102,6 +105,17 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/backfill", s.handleStartBackfill())
 	s.mux.HandleFunc("GET /api/rate-sources/{kind}/backfill", s.handleBackfillStatus())
+
+	s.mux.HandleFunc("GET /api/expense-groups", s.handleListExpenseGroups())
+	s.mux.HandleFunc("POST /api/expense-groups", s.handleCreateExpenseGroup())
+	s.mux.HandleFunc("PUT /api/expense-groups/{id}", s.handleUpdateExpenseGroup())
+	s.mux.HandleFunc("DELETE /api/expense-groups/{id}", s.handleDeactivateExpenseGroup())
+	s.mux.HandleFunc("POST /api/expense-groups/{id}/activate", s.handleActivateExpenseGroup())
+
+	s.mux.HandleFunc("POST /api/expense-categories", s.handleCreateExpenseCategory())
+	s.mux.HandleFunc("PUT /api/expense-categories/{id}", s.handleUpdateExpenseCategory())
+	s.mux.HandleFunc("DELETE /api/expense-categories/{id}", s.handleDeactivateExpenseCategory())
+	s.mux.HandleFunc("POST /api/expense-categories/{id}/activate", s.handleActivateExpenseCategory())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
