@@ -16,6 +16,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
+	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
@@ -77,9 +78,13 @@ func main() {
 		incomeService, companyService, exchangeRateService, settingsService,
 	)
 
-	bacfiller := ratefetch.NewBackfiller(
+	backfiller := ratefetch.NewBackfiller(
 		currencyService, rateSourceService, rateRegistry, exchangeRateService,
 	)
+
+	expenseGroupRepo := expensecategory.NewGroupRepository(db)
+	expenseCategoryRepo := expensecategory.NewCategoryRepository(db)
+	expenseCategoryService := expensecategory.NewService(expenseGroupRepo, expenseCategoryRepo)
 
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
@@ -97,7 +102,8 @@ func main() {
 			RateSource:      rateSourceService,
 			RateFetch:       rateFetchService,
 			Dashboard:       dashboardService,
-			Backfiller:      bacfiller,
+			Backfiller:      backfiller,
+			ExpenseCategory: expenseCategoryService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
