@@ -199,3 +199,62 @@ export async function getBackfillStatus(kind) {
 export async function getDashboard() {
     return request("/api/dashboard");
 }
+
+// --- Expense groups & categories ---
+
+export async function getExpenseGroups() {
+    const data = await request("/api/expense-groups");
+    return data.expense_groups;
+}
+
+export async function createExpenseGroup(name) {
+    return request("/api/expense-groups", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+    });
+}
+
+export async function updateExpenseGroup(id, name) {
+    return request(`/api/expense-groups/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ name }),
+    });
+}
+
+export async function deactivateExpenseGroup(id) {
+    return request(`/api/expense-groups/${id}`, {
+        method: "DELETE",
+    });
+}
+
+export async function activateExpenseGroup(id) {
+    return request(`/api/expense-groups/${id}/activate`, {
+        method: "POST",
+    });
+}
+
+export async function createExpenseCategory(groupId, name) {
+    return request("/api/expense-categories", {
+        method: "POST",
+        body: JSON.stringify({ group_id: groupId, name }),
+    });
+}
+
+export async function updateExpenseCategory(id, groupId, name) {
+    return request(`/api/expense-categories/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ group_id: groupId, name }),
+    });
+}
+
+export async function deactivateExpenseCategory(id) {
+    return request(`/api/expense-categories/${id}`, {
+        method: "DELETE",
+    });
+}
+
+export async function activateExpenseCategory(id) {
+    return request(`/api/expense-categories/${id}/activate`, {
+        method: "POST",
+    });
+}
