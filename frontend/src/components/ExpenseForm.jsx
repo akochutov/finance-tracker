@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createExpense, updateExpense } from "../api/client";
 import CategorySelect from "./CategorySelect";
-import { todayISO, lineTotal, formatAmount } from "./Expenseutils";
+import { todayISO, lineTotal, formatAmount } from "./expenseUtils";
 
 function emptyLine() {
     return {

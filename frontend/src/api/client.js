@@ -261,8 +261,12 @@ export async function activateExpenseCategory(id) {
 
 // --- Expenses ---
  
-export async function getExpenses() {
-    const data = await request("/api/expenses");
+export async function getExpenses(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const query = params.toString() ? `?${params}` : "";
+    const data = await request(`/api/expenses${query}`);
     return data.expenses;
 }
  
