@@ -29,6 +29,46 @@ services:
       timeout: 3s
       retries: 5
 
+  redis-prod:
+    image: redis:8-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+ 
+  redis-dev:
+    image: redis:8-alpine
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 volumes:
   pgdata-prod:
   pgdata-dev:
