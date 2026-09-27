@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatISODate, formatAmount, expenseTotal } from "./Expenseutils";
+import { formatISODate, formatAmount, expenseTotal } from "./expenseUtils";
 
 function describeQuantity(it) {
     const qty = Number(it.quantity);

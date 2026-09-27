@@ -17,6 +17,13 @@ export function shiftMonth(month, delta) {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
 
+
+export function monthRange(month) {
+    const [y, m] = month.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    return [`${month}-01`, `${month}-${pad(lastDay)}`];
+}
+
 export function monthLabel(month) {
     const [y, m] = month.split("-").map(Number);
     return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });

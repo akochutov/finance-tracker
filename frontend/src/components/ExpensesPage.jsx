@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getExpenses, deleteExpense, getExpenseGroups, getCurrencies } from "../api/client";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseRow from "./ExpenseRow";
-import { currentMonth, shiftMonth, monthLabel, sumByCurrency, formatAmount } from "./Expenseutils";
+import { currentMonth, shiftMonth, monthLabel, monthRange, sumByCurrency, formatAmount } from "./expenseUtils";
 
 function ExpensesPage() {
     const [expenses, setExpenses] = useState([]);
@@ -11,29 +11,40 @@ function ExpensesPage() {
     const [loaded, setLoaded] = useState(false);
     const [month, setMonth] = useState(currentMonth());
     const [editing, setEditing] = useState(null);
+    const [reloadKey, setReloadKey] = useState(0);
     const [error, setError] = useState(null);
 
-    async function loadExpenses() {
-        try {
-            setExpenses(await getExpenses());
-        } catch (err) {
-            setError(err.message);
-        }
-    }
-
     useEffect(() => {
-        async function loadAll() {
+        async function loadOptions() {
             try {
                 setGroups(await getExpenseGroups());
                 setCurrencies(await getCurrencies());
-                setExpenses(await getExpenses());
                 setLoaded(true);
             } catch (err) {
                 setError(err.message);
             }
         }
-        loadAll();
+        loadOptions();
     }, []);
+
+    useEffect(() => {
+        let ignore = false;
+        const [from, to] = monthRange(month);
+        getExpenses(from, to)
+            .then((data) => {
+                if (!ignore) setExpenses(data);
+            })
+            .catch((err) => {
+                if (!ignore) setError(err.message);
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [month, reloadKey]);
+
+    function reloadExpenses() {
+        setReloadKey((k) => k + 1);
+    }
 
     const categoriesById = {};
     for (const g of groups) {
@@ -48,7 +59,7 @@ function ExpensesPage() {
 
     function handleSaved() {
         setEditing(null);
-        loadExpenses();
+        reloadExpenses();
     }
 
     function handleEdit(expense) {
@@ -66,13 +77,13 @@ function ExpensesPage() {
             if (editing && editing.id === expense.id) {
                 setEditing(null);
             }
-            await loadExpenses();
+            reloadExpenses();
         } catch (err) {
             setError(err.message);
         }
     }
 
-    const visible = expenses.filter((e) => e.occurred_on.slice(0, 7) === month);
+    const visible = expenses;
     const totals = Object.entries(sumByCurrency(visible))
         .map(([code, sum]) => `${formatAmount(sum)} ${code}`)
         .join(" · ");
