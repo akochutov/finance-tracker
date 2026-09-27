@@ -26,8 +26,11 @@ func NewService(repo *Repository, categories *expensecategory.Service) *Service 
 	return &Service{repo: repo, categories: categories}
 }
 
-func (s *Service) List(ctx context.Context) ([]Expense, error) {
-	return s.repo.List(ctx)
+func (s *Service) List(ctx context.Context, from, to *time.Time) ([]Expense, error) {
+	if from != nil && to != nil && to.Before(*from) {
+		return nil, fmt.Errorf("%w: to is before from", ErrInvalidInput)
+	}
+	return s.repo.List(ctx, from, to)
 }
 
 func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (Expense, error) {

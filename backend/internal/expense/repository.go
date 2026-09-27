@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -78,13 +79,15 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (Expense, error)
 	return out, nil
 }
 
-func (r *Repository) List(ctx context.Context) ([]Expense, error) {
+func (r *Repository) List(ctx context.Context, from, to *time.Time) ([]Expense, error) {
 	const q = `
 		SELECT ` + expenseColumns + `
 		FROM expenses
+		WHERE ($1::date IS NULL OR occurred_on >= $1)
+		  AND ($2::date IS NULL OR occurred_on <= $2)
 		ORDER BY occurred_on DESC, created_at DESC`
 
-	rows, err := r.db.Query(ctx, q)
+	rows, err := r.db.Query(ctx, q, from, to)
 	if err != nil {
 		return nil, fmt.Errorf("list expenses: %w", err)
 	}

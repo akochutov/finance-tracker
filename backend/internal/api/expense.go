@@ -116,10 +116,23 @@ func writeExpenseError(w http.ResponseWriter, err error, op string) {
 
 func (s *Server) handleListExpenses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		list, err := s.expenses.List(r.Context())
+		fromStr := r.URL.Query().Get("from")
+		toStr := r.URL.Query().Get("to")
+
+		from, err := parseOptionalDate(&fromStr)
 		if err != nil {
-			log.Printf("list expenses: %v", err)
-			writeError(w, http.StatusInternalServerError, "internal error")
+			writeError(w, http.StatusBadRequest, "from must be YYYY-MM-DD")
+			return
+		}
+		to, err := parseOptionalDate(&toStr)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "to must be YYYY-MM-DD")
+			return
+		}
+
+		list, err := s.expenses.List(r.Context(), from, to)
+		if err != nil {
+			writeExpenseError(w, err, "list expenses")
 			return
 		}
 
