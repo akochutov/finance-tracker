@@ -9,6 +9,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/currency"
 	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
+	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
@@ -34,6 +35,7 @@ type Server struct {
 	dashboard         *dashboard.Service
 	backfiller        *ratefetch.Backfiller
 	expenseCategories *expensecategory.Service
+	expenses          *expense.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -52,6 +54,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		dashboard:         services.Dashboard,
 		backfiller:        services.Backfiller,
 		expenseCategories: services.ExpenseCategory,
+		expenses:          services.Expense,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -116,6 +119,12 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("PUT /api/expense-categories/{id}", s.handleUpdateExpenseCategory())
 	s.mux.HandleFunc("DELETE /api/expense-categories/{id}", s.handleDeactivateExpenseCategory())
 	s.mux.HandleFunc("POST /api/expense-categories/{id}/activate", s.handleActivateExpenseCategory())
+
+	s.mux.HandleFunc("GET /api/expenses", s.handleListExpenses())
+	s.mux.HandleFunc("GET /api/expenses/{id}", s.handleGetExpense())
+	s.mux.HandleFunc("POST /api/expenses", s.handleCreateExpense())
+	s.mux.HandleFunc("PUT /api/expenses/{id}", s.handleUpdateExpense())
+	s.mux.HandleFunc("DELETE /api/expenses/{id}", s.handleDeleteExpense())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
