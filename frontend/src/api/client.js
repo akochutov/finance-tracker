@@ -258,3 +258,30 @@ export async function activateExpenseCategory(id) {
         method: "POST",
     });
 }
+
+// --- Expenses ---
+ 
+export async function getExpenses() {
+    const data = await request("/api/expenses");
+    return data.expenses;
+}
+ 
+export async function createExpense(expense) {
+    return request("/api/expenses", {
+        method: "POST",
+        body: JSON.stringify(expense),
+    });
+}
+ 
+export async function updateExpense(id, expense) {
+    return request(`/api/expenses/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(expense),
+    });
+}
+ 
+export async function deleteExpense(id) {
+    return request(`/api/expenses/${id}`, {
+        method: "DELETE",
+    });
+}

@@ -268,6 +268,7 @@ textarea:focus {
 .btn-ghost:hover { background: var(--color-danger-bg); filter: none; }
 
 .btn-sm { font-size: 13px; padding: 5px 12px; min-height: 30px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
 
 /* ============================================================
    Lists
@@ -304,7 +305,8 @@ textarea:focus {
 .row-requisite,
 .row-exchange-rate,
 .row-expense-group,
-.row-expense-category {
+.row-expense-category,
+.row-expense {
   align-items: center;
   gap: 16px;
   padding: 13px 12px;
@@ -317,7 +319,8 @@ textarea:focus {
 .row-requisite:hover,
 .row-exchange-rate:hover,
 .row-expense-group:hover,
-.row-expense-category:hover {
+.row-expense-category:hover,
+.row-expense:hover {
   background: color-mix(in srgb, var(--color-text) 3%, transparent);
 }
 
@@ -359,6 +362,13 @@ textarea:focus {
   grid-template-columns: 1fr 180px auto;
 }
 
+/* date | total | summary | lines | payment | actions */
+.row-expense {
+  display: grid;
+  grid-template-columns: 90px 170px 1fr 70px 80px auto;
+  cursor: pointer;
+}
+
 /* category name | actions — indented under its group */
 .row-expense-category {
   display: grid;
@@ -373,7 +383,8 @@ textarea:focus {
 .row-requisite .badge,
 .row-exchange-rate .badge,
 .row-expense-group .badge,
-.row-expense-category .badge {
+.row-expense-category .badge,
+.row-expense .badge {
   justify-self: start;
   width: fit-content;
 }
@@ -465,6 +476,110 @@ textarea:focus {
   list-style: none;
   padding: 11px 12px 11px 44px;
   border-bottom: 1px solid var(--color-divider);
+  font-size: 13px;
+  color: var(--color-neutral-500);
+}
+
+/* ---- Expenses: form with dynamic lines -------------------- */
+.expense-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* # | description | category | price | qty | discount | total | remove */
+.expense-line {
+  display: grid;
+  grid-template-columns: 24px 1fr 240px 110px 80px 100px 110px 36px;
+  gap: 8px;
+  align-items: center;
+}
+/* same, plus period from / to before the total */
+.expense-lines.with-period .expense-line {
+  grid-template-columns: 24px 1fr 220px 100px 70px 90px 140px 140px 110px 36px;
+}
+
+.expense-line-head {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.line-no {
+  font-size: 13px;
+  color: var(--color-neutral-500);
+  text-align: right;
+}
+.line-total { font-size: 14px; }
+.num { text-align: right; }
+
+.expense-form-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
+.expense-total {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--color-neutral-700);
+}
+.expense-total b {
+  font-size: 16px;
+  color: var(--color-text);
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+
+/* ---- Expenses: list ---------------------------------------- */
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.month-nav h5 {
+  margin: 0;
+  min-width: 150px;
+  text-align: center;
+}
+
+.expense-item { list-style: none; }
+
+/* One line of text; long item lists are cut with an ellipsis */
+.expense-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-details {
+  padding: 6px 12px 10px 118px;
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+}
+
+/* description | category | qty x price | period | amount */
+.expense-detail-line {
+  display: grid;
+  grid-template-columns: 1fr 280px 170px 190px 110px;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px dashed var(--color-divider);
+}
+.expense-detail-line:last-child { border-bottom: 0; }
+
+.list-empty {
+  padding: 16px 12px;
   font-size: 13px;
   color: var(--color-neutral-500);
 }
