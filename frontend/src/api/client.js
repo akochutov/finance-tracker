@@ -289,3 +289,8 @@ export async function deleteExpense(id) {
         method: "DELETE",
     });
 }
+
+export async function getExpenseSuggestions() {
+    const data = await request("/api/expenses/suggestions");
+    return data.suggestions;
+}

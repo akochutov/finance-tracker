@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getExpenses, deleteExpense, getExpenseGroups, getCurrencies } from "../api/client";
+import { getExpenses, deleteExpense, getExpenseGroups, getCurrencies, getExpenseSuggestions } from "../api/client";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseRow from "./ExpenseRow";
 import { currentMonth, shiftMonth, monthLabel, monthRange, sumByCurrency, formatAmount } from "./expenseUtils";
@@ -12,6 +12,7 @@ function ExpensesPage() {
     const [month, setMonth] = useState(currentMonth());
     const [editing, setEditing] = useState(null);
     const [reloadKey, setReloadKey] = useState(0);
+    const [suggestions, setSuggestions] = useState([]);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -41,6 +42,21 @@ function ExpensesPage() {
             ignore = true;
         };
     }, [month, reloadKey]);
+
+    useEffect(() => {
+        let ignore = false;
+        getExpenseSuggestions()
+            .then((data) => {
+                if (ignore) return;
+                setSuggestions(data.map((s) => ({ ...s, lower: s.description.toLowerCase() })));
+            })
+            .catch((err) => {
+                console.warn("load suggestions:", err);
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [reloadKey]);
 
     function reloadExpenses() {
         setReloadKey((k) => k + 1);
@@ -103,6 +119,8 @@ function ExpensesPage() {
                     groups={groups}
                     currencies={currencies}
                     defaultCurrency={defaultCurrency}
+                    suggestions={suggestions}
+                    categoriesById={categoriesById}
                     onSaved={handleSaved}
                     onCancel={() => setEditing(null)}
                 />
