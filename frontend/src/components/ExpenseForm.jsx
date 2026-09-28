@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createExpense, updateExpense } from "../api/client";
 import CategorySelect from "./CategorySelect";
+import DescriptionInput from "./DescriptionInput";
 import { todayISO, lineTotal, formatAmount } from "./expenseUtils";
 
 function emptyLine() {
@@ -29,7 +30,7 @@ function lineFromItem(it) {
     };
 }
 
-function ExpenseForm({ expense, groups, currencies, defaultCurrency, onSaved, onCancel }) {
+function ExpenseForm({ expense, groups, currencies, defaultCurrency, suggestions, categoriesById, onSaved, onCancel }) {
     const isEdit = expense !== null;
 
     const [occurredOn, setOccurredOn] = useState(isEdit ? expense.occurred_on.slice(0, 10) : todayISO());
@@ -46,6 +47,18 @@ function ExpenseForm({ expense, groups, currencies, defaultCurrency, onSaved, on
 
     function updateLine(key, field, value) {
         setLines((prev) => prev.map((l) => (l.key === key ? { ...l, [field]: value } : l)));
+    }
+
+    function patchLine(key, patch) {
+        setLines((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+    }
+
+    function pickSuggestion(key, s) {
+        const patch = { description: s.description };
+        if (s.category_id) {
+            patch.categoryId = s.category_id;
+        }
+        patchLine(key, patch);
     }
 
     function addLine() {
@@ -157,7 +170,13 @@ function ExpenseForm({ expense, groups, currencies, defaultCurrency, onSaved, on
                 {lines.map((l, i) => (
                     <div className="expense-line" key={l.key}>
                         <span className="line-no">{i + 1}</span>
-                        <input className="input" value={l.description} onChange={(e) => updateLine(l.key, "description", e.target.value)} />
+                        <DescriptionInput
+                            value={l.description}
+                            onChange={(v) => updateLine(l.key, "description", v)}
+                            onPick={(s) => pickSuggestion(l.key, s)}
+                            suggestions={suggestions}
+                            categoriesById={categoriesById}
+                        />
                         <CategorySelect
                             groups={groups}
                             value={l.categoryId}

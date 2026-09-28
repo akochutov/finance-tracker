@@ -20,6 +20,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
+	"github.com/akochutov/finance-tracker/internal/platform/redis"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
@@ -36,6 +37,22 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// --- Cache connect ---
+	rdb, err := redis.New(cfg.RedisURL)
+	if err != nil {
+		log.Fatalf("redis: %v", err)
+	}
+	defer rdb.Close()
+
+	pingCtx, pingCancel := context.WithTimeout(ctx, 2*time.Second)
+	err = rdb.Ping(pingCtx).Err()
+	pingCancel()
+	if err != nil {
+		log.Printf("WARN redis unavailable, running without cache: %v", err)
+	} else {
+		log.Println("connected to redis")
+	}
 
 	// --- Database connect ---
 	db, err := postgres.New(ctx, cfg.DatabaseURL)
@@ -88,7 +105,8 @@ func main() {
 	expenseCategoryService := expensecategory.NewService(expenseGroupRepo, expenseCategoryRepo)
 
 	expenseRepo := expense.NewRepository(db)
-	expenseService := expense.NewService(expenseRepo, expenseCategoryService)
+	suggestionCache := expense.NewRedisSuggestionCache(rdb, time.Hour)
+	expenseService := expense.NewService(expenseRepo, expenseCategoryService, suggestionCache)
 
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)

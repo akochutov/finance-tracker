@@ -539,6 +539,65 @@ textarea:focus {
   cursor: pointer;
 }
 
+/* ---- Expenses: description autocomplete ------------------ */
+.suggest {
+  position: relative;   /* anchor for the dropdown */
+  min-width: 0;         /* let the 1fr grid cell shrink */
+}
+
+.suggest-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(560px, 90vw);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+
+.suggest-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.suggest-option.active {
+  background: var(--color-accent-100);
+}
+.suggest-option.active .suggest-text {
+  color: var(--color-accent-700);
+}
+
+.suggest-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest-meta {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--color-neutral-600);
+}
+.suggest-uses {
+  min-width: 2ch;
+  font-size: 12px;
+  text-align: right;
+  color: var(--color-neutral-500);
+}
+
 /* ---- Expenses: list ---------------------------------------- */
 .month-nav {
   display: flex;

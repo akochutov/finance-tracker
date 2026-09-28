@@ -37,6 +37,10 @@ type saveExpenseRequest struct {
 	Items       []expenseItemRequest `json:"items"`
 }
 
+type listSuggestionsResponse struct {
+	Suggestions []expense.Suggestion `json:"suggestions"`
+}
+
 func (req saveExpenseRequest) toExpense() (expense.Expense, error) {
 	occurredOn, err := time.Parse(expenseDateLayout, req.OccurredOn)
 	if err != nil {
@@ -227,5 +231,17 @@ func (s *Server) handleDeleteExpense() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (s *Server) handleListExpenseSuggestions() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		list, err := s.expenses.Suggestions(r.Context())
+		if err != nil {
+			writeExpenseError(w, err, "list expense suggestions")
+			return
+		}
+
+		writeJSON(w, http.StatusOK, listSuggestionsResponse{Suggestions: list})
 	}
 }

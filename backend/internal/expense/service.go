@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -20,10 +21,11 @@ var paymentTypes = map[string]bool{
 type Service struct {
 	repo       *Repository
 	categories *expensecategory.Service
+	cache      SuggestionCache
 }
 
-func NewService(repo *Repository, categories *expensecategory.Service) *Service {
-	return &Service{repo: repo, categories: categories}
+func NewService(repo *Repository, categories *expensecategory.Service, cache SuggestionCache) *Service {
+	return &Service{repo: repo, categories: categories, cache: cache}
 }
 
 func (s *Service) List(ctx context.Context, from, to *time.Time) ([]Expense, error) {
@@ -38,7 +40,11 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (Expense, error) {
 }
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
-	return s.repo.Delete(ctx, id)
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.invalidateSuggestions(ctx)
+	return nil
 }
 
 func (s *Service) Create(ctx context.Context, e Expense) (Expense, error) {
@@ -56,7 +62,12 @@ func (s *Service) Create(ctx context.Context, e Expense) (Expense, error) {
 	}
 	e.ID = id
 
-	return s.repo.Create(ctx, e)
+	out, err := s.repo.Create(ctx, e)
+	if err != nil {
+		return Expense{}, err
+	}
+	s.invalidateSuggestions(ctx)
+	return out, nil
 }
 
 func (s *Service) Update(ctx context.Context, e Expense) (Expense, error) {
@@ -78,7 +89,33 @@ func (s *Service) Update(ctx context.Context, e Expense) (Expense, error) {
 		return Expense{}, err
 	}
 
-	return s.repo.Update(ctx, e)
+	out, err := s.repo.Update(ctx, e)
+	if err != nil {
+		return Expense{}, err
+	}
+	s.invalidateSuggestions(ctx)
+	return out, nil
+}
+
+func (s *Service) Suggestions(ctx context.Context) ([]Suggestion, error) {
+	list, ok, err := s.cache.Get(ctx)
+	if err != nil {
+		log.Printf("WARN suggestions cache get: %v", err)
+	}
+	if ok {
+		return list, nil
+	}
+
+	list, err = s.repo.Suggestions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cache.Set(ctx, list); err != nil {
+		log.Printf("WARN suggestions cache set: %v", err)
+	}
+
+	return list, nil
 }
 
 func normalizeHeader(e *Expense) error {
@@ -198,4 +235,11 @@ func trimOrNil(s *string) *string {
 		return nil
 	}
 	return &v
+}
+
+func (s *Service) invalidateSuggestions(ctx context.Context) {
+	ctx = context.WithoutCancel(ctx)
+	if err := s.cache.Invalidate(ctx); err != nil {
+		log.Printf("WARN suggestions cache invalidate: %v", err)
+	}
 }
