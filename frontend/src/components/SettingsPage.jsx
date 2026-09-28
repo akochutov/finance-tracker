@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { getSettings, updateSettings, getCurrencies } from "../api/client";
+import { getSettings, updateSettings, updateExpenseBaseCurrency, getCurrencies } from "../api/client";
 import RateSourceSettings from "./RateSourceSettings";
 
 function SettingsPage() {
     const [baseCurrency, setBaseCurrency] = useState("");
+    const [expenseCurrency, setExpenseCurrency] = useState("");
     const [fiatCurrencies, setFiatCurrencies] = useState([]);
     const [status, setStatus] = useState(null);
     const [error, setError] = useState(null);
@@ -12,6 +13,7 @@ function SettingsPage() {
         Promise.all([getSettings(), getCurrencies()])
             .then(([settings, currencies]) => {
                 setBaseCurrency(settings.base_currency);
+                setExpenseCurrency(settings.expense_base_currency);
                 setFiatCurrencies(
                     currencies.filter((c) => c.kind === "fiat" && c.is_active)
                 );
@@ -19,17 +21,14 @@ function SettingsPage() {
             .catch((err) => setError(err.message));
     }, []);
 
-    async function handleChange(event) {
-        const code = event.target.value;
-        const previous = baseCurrency;
-
-        setBaseCurrency(code);
+    async function changeCurrency(code, previous, setValue, save, label) {
+        setValue(code);
         setStatus(null);
         try {
-            await updateSettings(code);
-            setStatus({ type: "ok", text: `Base currency set to ${code}` });
+            await save(code);
+            setStatus({ type: "ok", text: `${label} set to ${code}` });
         } catch (err) {
-            setBaseCurrency(previous);
+            setValue(previous);
             setStatus({ type: "error", text: err.message });
         }
     }
@@ -43,11 +42,11 @@ function SettingsPage() {
             <h1>Settings</h1>
 
             <div className="settings-field">
-                <label htmlFor="base-currency">Base currency</label>
+                <label htmlFor="base-currency">Income dashboard currency</label>
                 <select
                     id="base-currency"
                     value={baseCurrency}
-                    onChange={handleChange}
+                    onChange={(e) => changeCurrency(e.target.value, baseCurrency, setBaseCurrency, updateSettings, "Income dashboard currency")}
                 >
                     {fiatCurrencies.map((c) => (
                         <option key={c.code} value={c.code}>
@@ -56,7 +55,25 @@ function SettingsPage() {
                     ))}
                 </select>
                 <p className="settings-hint">
-                    Dashboards convert to this currency. Existing records are never changed.
+                    The income dashboard converts to this currency. Existing records are never changed.
+                </p>
+            </div>
+
+            <div className="settings-field">
+                <label htmlFor="expense-currency">Expenses dashboard currency</label>
+                <select
+                    id="expense-currency"
+                    value={expenseCurrency}
+                    onChange={(e) => changeCurrency(e.target.value, expenseCurrency, setExpenseCurrency, updateExpenseBaseCurrency, "Expenses dashboard currency")}
+                >
+                    {fiatCurrencies.map((c) => (
+                        <option key={c.code} value={c.code}>
+                            {c.code} - {c.name}
+                        </option>
+                    ))}
+                </select>
+                <p className="settings-hint">
+                    The expenses dashboard converts to this currency. Until you choose one, it follows the income currency.
                 </p>
             </div>
 

@@ -140,6 +140,13 @@ export async function updateSettings(baseCurrency) {
     });
 }
 
+export async function updateExpenseBaseCurrency(code) {
+    return request("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ expense_base_currency: code }),
+    });
+}
+
 // --- Exchange Rates ---
 
 export async function getExchangeRates(currency = "") {
