@@ -119,6 +119,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("PUT /api/expense-categories/{id}", s.handleUpdateExpenseCategory())
 	s.mux.HandleFunc("DELETE /api/expense-categories/{id}", s.handleDeactivateExpenseCategory())
 	s.mux.HandleFunc("POST /api/expense-categories/{id}/activate", s.handleActivateExpenseCategory())
+	s.mux.HandleFunc("PUT /api/expense-categories/{id}/dashboard", s.handleSetExpenseCategoryDashboard())
 
 	s.mux.HandleFunc("GET /api/expenses", s.handleListExpenses())
 	s.mux.HandleFunc("GET /api/expenses/{id}", s.handleGetExpense())

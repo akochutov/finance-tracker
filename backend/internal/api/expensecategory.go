@@ -37,6 +37,10 @@ type updateExpenseCategoryRequest struct {
 	Name    string    `json:"name"`
 }
 
+type setCategoryDashboardRequest struct {
+	Include *bool `json:"include"`
+}
+
 func writeExpenseCategoryError(w http.ResponseWriter, err error, op string) {
 	switch {
 	case errors.Is(err, expensecategory.ErrNameRequired):
@@ -247,6 +251,33 @@ func (s *Server) handleActivateExpenseCategory() http.HandlerFunc {
 
 		if err := s.expenseCategories.SetCategoryActive(r.Context(), id, true); err != nil {
 			writeExpenseCategoryError(w, err, "activate expense category")
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func (s *Server) handleSetExpenseCategoryDashboard() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid id")
+			return
+		}
+
+		var req setCategoryDashboardRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+		if req.Include == nil {
+			writeError(w, http.StatusBadRequest, "include is required")
+			return
+		}
+
+		if err := s.expenseCategories.SetCategoryInDashboard(r.Context(), id, *req.Include); err != nil {
+			writeExpenseCategoryError(w, err, "set expense category dashboard")
 			return
 		}
 

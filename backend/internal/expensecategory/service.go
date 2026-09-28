@@ -84,10 +84,11 @@ func (s *Service) CreateCategory(ctx context.Context, groupID uuid.UUID, name st
 	}
 
 	cat := Category{
-		ID:       id,
-		GroupID:  groupID,
-		Name:     name,
-		IsActive: true,
+		ID:                 id,
+		GroupID:            groupID,
+		Name:               name,
+		IsActive:           true,
+		IncludeInDashboard: true,
 	}
 
 	return s.categories.Create(ctx, cat)
@@ -142,4 +143,8 @@ func (s *Service) SetCategoryActive(ctx context.Context, id uuid.UUID, active bo
 	}
 
 	return s.categories.SetActive(ctx, id, active)
+}
+
+func (s *Service) SetCategoryInDashboard(ctx context.Context, id uuid.UUID, include bool) error {
+	return s.categories.SetIncludeInDashboard(ctx, id, include)
 }
