@@ -125,6 +125,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/expenses", s.handleCreateExpense())
 	s.mux.HandleFunc("PUT /api/expenses/{id}", s.handleUpdateExpense())
 	s.mux.HandleFunc("DELETE /api/expenses/{id}", s.handleDeleteExpense())
+
+	s.mux.HandleFunc("GET /api/expenses/suggestions", s.handleListExpenseSuggestions())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

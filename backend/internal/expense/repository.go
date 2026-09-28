@@ -176,6 +176,43 @@ func (r *Repository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (r *Repository) Suggestions(ctx context.Context) ([]Suggestion, error) {
+	const q = `
+		SELECT DISTINCT ON (x.description)
+			x.description,
+			CASE WHEN c.is_active THEN x.category_id END AS category_id,
+			sum(x.uses) OVER (PARTITION BY x.description)::int AS uses
+		FROM (
+			SELECT i.description, i.category_id, count(*) AS uses, max(e.occurred_on) AS last_used
+			FROM expense_items i
+			JOIN expenses e ON e.id = i.expense_id
+			GROUP BY i.description, i.category_id
+		) x
+		JOIN expense_categories c ON c.id = x.category_id
+		ORDER BY x.description, x.uses DESC, x.last_used DESC`
+
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list suggestions: %w", err)
+	}
+	defer rows.Close()
+
+	suggestions := make([]Suggestion, 0)
+	for rows.Next() {
+		var s Suggestion
+		if err := rows.Scan(&s.Description, &s.CategoryID, &s.Uses); err != nil {
+			return nil, fmt.Errorf("scan suggestions: %w", err)
+		}
+		suggestions = append(suggestions, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate suggestions: %w", err)
+	}
+
+	return suggestions, nil
+}
+
 func insertItems(ctx context.Context, tx pgx.Tx, expenseID uuid.UUID, items []Item) ([]Item, error) {
 	const q = `
 		INSERT INTO expense_items

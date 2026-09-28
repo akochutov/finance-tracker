@@ -31,3 +31,9 @@ type Expense struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 	Items       []Item    `json:"items"`
 }
+
+type Suggestion struct {
+	Description string     `json:"description"`
+	CategoryID  *uuid.UUID `json:"category_id"`
+	Uses        int        `json:"uses"`
+}

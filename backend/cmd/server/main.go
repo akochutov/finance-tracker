@@ -105,7 +105,8 @@ func main() {
 	expenseCategoryService := expensecategory.NewService(expenseGroupRepo, expenseCategoryRepo)
 
 	expenseRepo := expense.NewRepository(db)
-	expenseService := expense.NewService(expenseRepo, expenseCategoryService)
+	suggestionCache := expense.NewRedisSuggestionCache(rdb, time.Hour)
+	expenseService := expense.NewService(expenseRepo, expenseCategoryService, suggestionCache)
 
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
