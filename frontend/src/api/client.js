@@ -259,6 +259,13 @@ export async function activateExpenseCategory(id) {
     });
 }
 
+export async function setExpenseCategoryDashboard(id, include) {
+    return request(`/api/expense-categories/${id}/dashboard`, {
+        method: "PUT",
+        body: JSON.stringify({ include }),
+    });
+}
+
 // --- Expenses ---
  
 export async function getExpenses(from, to) {

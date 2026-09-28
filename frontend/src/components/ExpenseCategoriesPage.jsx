@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { 
     getExpenseGroups, updateExpenseGroup, deactivateExpenseGroup, activateExpenseGroup,
     updateExpenseCategory, deactivateExpenseCategory, activateExpenseCategory,
+    setExpenseCategoryDashboard,
 } from "../api/client";
 import ExpenseGroupForm from "./ExpenseGroupForm";
 import ExpenseCategoryForm from "./ExpenseCategoryForm";
@@ -43,6 +44,7 @@ function ExpenseCategoriesPage() {
         save: (id, groupId, name) => run(() => updateExpenseCategory(id, groupId, name)),
         deactivate: (id) => run(() => deactivateExpenseCategory(id)),
         activate: (id) => run(() => activateExpenseCategory(id)),
+        setDashboard: (id, include) => run(() => setExpenseCategoryDashboard(id, include)),
     };
 
     useEffect(() => {
