@@ -140,6 +140,13 @@ export async function updateSettings(baseCurrency) {
     });
 }
 
+export async function updateExpenseBaseCurrency(code) {
+    return request("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ expense_base_currency: code }),
+    });
+}
+
 // --- Exchange Rates ---
 
 export async function getExchangeRates(currency = "") {
@@ -200,6 +207,13 @@ export async function getDashboard() {
     return request("/api/dashboard");
 }
 
+// --- Expenses dashboard ---
+ 
+export async function getExpenseDashboard(from, to) {
+    const params = new URLSearchParams({ from, to });
+    return request(`/api/dashboard/expenses?${params}`);
+}
+
 // --- Expense groups & categories ---
 
 export async function getExpenseGroups() {
@@ -256,6 +270,13 @@ export async function deactivateExpenseCategory(id) {
 export async function activateExpenseCategory(id) {
     return request(`/api/expense-categories/${id}/activate`, {
         method: "POST",
+    });
+}
+
+export async function setExpenseCategoryDashboard(id, include) {
+    return request(`/api/expense-categories/${id}/dashboard`, {
+        method: "PUT",
+        body: JSON.stringify({ include }),
     });
 }
 

@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const categoryColumns = `id, group_id, name, is_active, include_in_dashboard, created_at, updated_at`
+
 type CategoryRepository struct {
 	db *pgxpool.Pool
 }
@@ -21,13 +23,12 @@ func NewCategoryRepository(db *pgxpool.Pool) *CategoryRepository {
 
 func (r *CategoryRepository) Create(ctx context.Context, cat Category) (Category, error) {
 	const q = `
-		INSERT INTO expense_categories (id, group_id, name, is_active)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, group_id, name, is_active, created_at, updated_at`
+		INSERT INTO expense_categories (id, group_id, name, is_active, include_in_dashboard)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING ` + categoryColumns
 
 	var out Category
-	err := r.db.QueryRow(ctx, q, cat.ID, cat.GroupID, cat.Name, cat.IsActive).
-		Scan(&out.ID, &out.GroupID, &out.Name, &out.IsActive, &out.CreatedAt, &out.UpdatedAt)
+	err := scanCategory(r.db.QueryRow(ctx, q, cat.ID, cat.GroupID, cat.Name, cat.IsActive, cat.IncludeInDashboard), &out)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -45,15 +46,10 @@ func (r *CategoryRepository) Create(ctx context.Context, cat Category) (Category
 }
 
 func (r *CategoryRepository) GetByID(ctx context.Context, id uuid.UUID) (Category, error) {
-	const q = `
-		SELECT id, group_id, name, is_active, created_at, updated_at
-		FROM expense_categories
-		WHERE id = $1`
+	const q = `SELECT ` + categoryColumns + ` FROM expense_categories WHERE id = $1`
 
 	var out Category
-	err := r.db.QueryRow(ctx, q, id).
-		Scan(&out.ID, &out.GroupID, &out.Name, &out.IsActive, &out.CreatedAt, &out.UpdatedAt)
-	if err != nil {
+	if err := scanCategory(r.db.QueryRow(ctx, q, id), &out); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Category{}, ErrCategoryNotFound
 		}
@@ -64,10 +60,7 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id uuid.UUID) (Categor
 }
 
 func (r *CategoryRepository) List(ctx context.Context) ([]Category, error) {
-	const q = `
-		SELECT id, group_id, name, is_active, created_at, updated_at
-		FROM expense_categories
-		ORDER BY name`
+	const q = `SELECT ` + categoryColumns + ` FROM expense_categories ORDER BY name`
 
 	rows, err := r.db.Query(ctx, q)
 	if err != nil {
@@ -78,8 +71,7 @@ func (r *CategoryRepository) List(ctx context.Context) ([]Category, error) {
 	categories := make([]Category, 0)
 	for rows.Next() {
 		var c Category
-		err := rows.Scan(&c.ID, &c.GroupID, &c.Name, &c.IsActive, &c.CreatedAt, &c.UpdatedAt)
-		if err != nil {
+		if err := scanCategory(rows, &c); err != nil {
 			return nil, fmt.Errorf("scan categories: %w", err)
 		}
 		categories = append(categories, c)
@@ -112,11 +104,10 @@ func (r *CategoryRepository) Update(ctx context.Context, id, groupID uuid.UUID, 
 		UPDATE expense_categories
 		SET group_id = $1, name = $2
 		WHERE id = $3
-		RETURNING id, group_id, name, is_active, created_at, updated_at`
+		RETURNING ` + categoryColumns
 
 	var out Category
-	err := r.db.QueryRow(ctx, q, groupID, name, id).
-		Scan(&out.ID, &out.GroupID, &out.Name, &out.IsActive, &out.CreatedAt, &out.UpdatedAt)
+	err := scanCategory(r.db.QueryRow(ctx, q, groupID, name, id), &out)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -148,4 +139,22 @@ func (r *CategoryRepository) SetActive(ctx context.Context, id uuid.UUID, active
 	}
 
 	return nil
+}
+
+func (r *CategoryRepository) SetIncludeInDashboard(ctx context.Context, id uuid.UUID, include bool) error {
+	const q = `UPDATE expense_categories SET include_in_dashboard = $1 WHERE id = $2`
+
+	tag, err := r.db.Exec(ctx, q, include, id)
+	if err != nil {
+		return fmt.Errorf("set category include in dashboard: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrCategoryNotFound
+	}
+
+	return nil
+}
+
+func scanCategory(row pgx.Row, c *Category) error {
+	return row.Scan(&c.ID, &c.GroupID, &c.Name, &c.IsActive, &c.IncludeInDashboard, &c.CreatedAt, &c.UpdatedAt)
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
+	"github.com/akochutov/finance-tracker/internal/expensedashboard"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
 	"github.com/akochutov/finance-tracker/internal/platform/redis"
@@ -108,25 +109,31 @@ func main() {
 	suggestionCache := expense.NewRedisSuggestionCache(rdb, time.Hour)
 	expenseService := expense.NewService(expenseRepo, expenseCategoryService, suggestionCache)
 
+	expenseDashboardRepo := expensedashboard.NewRepository(db)
+	expenseDashboardService := expensedashboard.NewService(
+		expenseDashboardRepo, exchangeRateService, settingsService, incomeService,
+	)
+
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
 
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: api.New(db, api.Services{
-			Currency:        currencyService,
-			Company:         companyService,
-			BankRequisite:   bankRequisiteService,
-			CryptoRequisite: cryptoRequisiteService,
-			Income:          incomeService,
-			Settings:        settingsService,
-			ExchangeRate:    exchangeRateService,
-			RateSource:      rateSourceService,
-			RateFetch:       rateFetchService,
-			Dashboard:       dashboardService,
-			Backfiller:      backfiller,
-			ExpenseCategory: expenseCategoryService,
-			Expense:         expenseService,
+			Currency:         currencyService,
+			Company:          companyService,
+			BankRequisite:    bankRequisiteService,
+			CryptoRequisite:  cryptoRequisiteService,
+			Income:           incomeService,
+			Settings:         settingsService,
+			ExchangeRate:     exchangeRateService,
+			RateSource:       rateSourceService,
+			RateFetch:        rateFetchService,
+			Dashboard:        dashboardService,
+			Backfiller:       backfiller,
+			ExpenseCategory:  expenseCategoryService,
+			Expense:          expenseService,
+			ExpenseDashboard: expenseDashboardService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,

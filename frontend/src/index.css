@@ -539,65 +539,6 @@ textarea:focus {
   cursor: pointer;
 }
 
-/* ---- Expenses: description autocomplete ------------------ */
-.suggest {
-  position: relative;   /* anchor for the dropdown */
-  min-width: 0;         /* let the 1fr grid cell shrink */
-}
-
-.suggest-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
-  min-width: 100%;
-  width: max-content;
-  max-width: min(560px, 90vw);
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  background: var(--color-surface);
-  border: 1px solid var(--color-neutral-300);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
-}
-
-.suggest-option {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 12px;
-  align-items: baseline;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.suggest-option.active {
-  background: var(--color-accent-100);
-}
-.suggest-option.active .suggest-text {
-  color: var(--color-accent-700);
-}
-
-.suggest-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.suggest-meta {
-  max-width: 240px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--color-neutral-600);
-}
-.suggest-uses {
-  min-width: 2ch;
-  font-size: 12px;
-  text-align: right;
-  color: var(--color-neutral-500);
-}
-
 /* ---- Expenses: list ---------------------------------------- */
 .month-nav {
   display: flex;
@@ -937,3 +878,313 @@ textarea:focus {
   color: var(--color-neutral-700);
 }
 .backfill-counts { color: var(--color-neutral-500); white-space: nowrap; }
+
+/* ============================================================
+   Expenses dashboard (xd-)
+   ============================================================ */
+.xd-page { display: flex; flex-direction: column; gap: 24px; }
+.xd-page > .page-header { margin-bottom: 0; }
+.xd-loading > :not(.page-header) { opacity: 0.55; transition: opacity 0.15s; }
+
+.xd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.xd-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Month / Quarter / Year / Custom */
+.xd-segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius);
+}
+.xd-segmented button {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 14px;
+  min-height: 30px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-neutral-800);
+  background: transparent;
+  cursor: pointer;
+}
+.xd-segmented button:hover { background: var(--color-accent-100); }
+.xd-segmented button.active {
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+.xd-custom { display: flex; align-items: center; gap: 8px; }
+.xd-custom .input { width: 160px; }
+
+/* Panels: like .card, but spacing comes from the page gap */
+.xd-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+.xd-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.xd-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+
+/* ---- KPI cards ---------------------------------------------- */
+.xd-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.xd-kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.xd-kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 10px;
+}
+.xd-kpi-sub {
+  font-size: 13px;
+  color: var(--color-neutral-700);
+  margin-top: 8px;
+}
+.xd-split {
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #d0d9fb;
+  overflow: hidden;
+  display: flex;
+}
+.xd-split > div { background: var(--color-accent-700); }
+
+/* Spending up is orange, down is blue — no red/green judgement */
+.xd-delta { font-weight: 700; }
+.xd-up { color: #c2410c; }
+.xd-down { color: var(--color-accent-700); }
+.xd-strong { font-weight: 800; }
+
+/* ---- Groups + categories -------------------------------------- */
+.xd-row-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 16px;
+  align-items: start;
+}
+.xd-row-halves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* name | share bar | amount | % | vs previous */
+.xd-group-row {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 100px 56px 100px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.xd-group-row.xd-no-compare { grid-template-columns: 200px minmax(0, 1fr) 100px 56px; }
+.xd-group-row:hover { background: color-mix(in srgb, var(--color-text) 3%, transparent); }
+.xd-group-row.selected {
+  background: var(--color-accent-100);
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.xd-group-row:focus { outline: none; }
+.xd-group-row:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: -2px; }
+.xd-group-head {
+  min-height: 0;
+  padding-top: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+  cursor: default;
+}
+.xd-group-head:hover { background: transparent; }
+.xd-group-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xd-track {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  background: #eef0f5;
+  overflow: hidden;
+}
+.xd-track-thin { height: 6px; }
+.xd-track > span { display: block; }
+
+.xd-cat-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 18px;
+  font-weight: 800;
+}
+.xd-cats { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
+.xd-cat { display: flex; flex-direction: column; gap: 5px; }
+.xd-cat-line { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+
+/* ---- Monthly charts ------------------------------------------- */
+.xd-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--color-neutral-800);
+}
+.xd-legend span { display: flex; align-items: center; gap: 6px; }
+.xd-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.xd-chart { display: flex; gap: 12px; }
+.xd-axis {
+  width: 44px;
+  height: 220px;
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  text-align: right;
+  color: var(--color-neutral-700);
+}
+.xd-cols {
+  flex-grow: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 1px solid var(--color-divider);
+}
+.xd-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.xd-col.muted { opacity: 0.5; }
+.xd-col-value {
+  height: 18px;
+  font-size: 11px;
+  color: var(--color-neutral-800);
+  white-space: nowrap;
+}
+.xd-fixed-value { color: var(--color-accent-700); }
+.xd-col-label {
+  height: 18px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--color-neutral-800);
+  white-space: nowrap;
+}
+
+/* Stacked column: first child sits at the bottom */
+.xd-stack {
+  width: 70%;
+  max-width: 56px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+.xd-stack-narrow { width: 50%; max-width: 36px; }
+
+/* Income and expense side by side */
+.xd-pair { display: flex; align-items: flex-end; gap: 3px; }
+.xd-pair > div { width: 14px; border-radius: 3px 3px 0 0; }
+
+.xd-total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-divider);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* ---- Largest expenses ---------------------------------------- */
+/* date | amount | group | lines | items */
+.xd-receipt {
+  display: grid;
+  grid-template-columns: 100px 130px 240px minmax(0, 1fr) 70px;
+  gap: 16px;
+  align-items: center;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 14px;
+}
+.xd-receipt-head {
+  padding-top: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.xd-ellipsis {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow screens: stack the side-by-side rows */
+@media (max-width: 1100px) {
+  .xd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .xd-row-groups,
+  .xd-row-halves { grid-template-columns: minmax(0, 1fr); }
+}

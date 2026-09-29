@@ -49,6 +49,14 @@ function ExpenseCategoryRow({ category, groups, actions }) {
         <li className={category.is_active ? "row-expense-category" : "row-expense-category row-inactive"}>
             <span>{category.name}</span>
             <div className="row-actions">
+                <label className="checkbox" title="Count this category on the expenses dashboard">
+                    <input
+                        type="checkbox"
+                        checked={category.include_in_dashboard}
+                        onChange={(e) => actions.setDashboard(category.id, e.target.checked)}
+                    />
+                    Dashboard
+                </label>
                 {category.is_active ? (
                     <>
                         <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>
