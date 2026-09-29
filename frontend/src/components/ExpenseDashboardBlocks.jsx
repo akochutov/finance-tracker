@@ -59,9 +59,11 @@ export function KpiRow({ summary, compare, prevLabel }) {
                 <div className="xd-kpi-label">Savings rate</div>
                 <div className="xd-kpi-value mono">{rate === null ? "—" : `${Number(rate).toFixed(1)}%`}</div>
                 <div className="xd-kpi-sub">
-                    {income > 0
+                    {income > 0 && total > 0
                         ? `Left ${formatWhole(income - total)} of ${formatWhole(income)} income`
-                        : "No income in this period"}
+                        : income > 0
+                            ? "No expenses recorded for this period"
+                            : "No income in this period"}
                     {compare && prevRate !== null && ` · ${prevLabel} ${Number(prevRate).toFixed(1)}%`}
                 </div>
             </div>
@@ -110,9 +112,11 @@ export function GroupsBreakdown({ groups, total, selectedId, onSelect, colorOf, 
                     </button>
                 );
             })}
-            {compare && gone.length > 0 && (
+            {compare && active.length > 0 && gone.length > 0 && (
                 <p className="xd-note">
-                    Not in this period: {gone.map((g) => `${g.name} (${prevLabel} ${formatWhole(g.previous)})`).join(", ")}.
+                    Not in this period:{" "}
+                    {gone.slice(0, 3).map((g) => `${g.name} (${prevLabel} ${formatWhole(g.previous)})`).join(", ")}
+                    {gone.length > 3 && ` and ${gone.length - 3} more`}.
                 </p>
             )}
         </section>

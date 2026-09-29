@@ -189,6 +189,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 
 	days := daysBetween(from, to)
 	prevDays := daysBetween(prevFrom, prevTo)
+	elapsed := elapsedDays(from, to, dateOnly(time.Now()))
 
 	return Dashboard{
 		Currency: base,
@@ -197,7 +198,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 		Summary: Summary{
 			Total:                total.Round(moneyPlaces),
 			PreviousTotal:        prevTotal.Round(moneyPlaces),
-			DailyAverage:         total.DivRound(decimal.NewFromInt(int64(days)), moneyPlaces),
+			DailyAverage:         total.DivRound(decimal.NewFromInt(int64(elapsed)), moneyPlaces),
 			PreviousDailyAverage: prevTotal.DivRound(decimal.NewFromInt(int64(prevDays)), moneyPlaces),
 			Receipts:             len(receipts),
 			Fixed:                fixed.Round(moneyPlaces),
@@ -306,7 +307,7 @@ func buildTrend(keys []string, months map[string]*monthAcc) []MonthTrend {
 }
 
 func savingsRate(income, spent decimal.Decimal) *decimal.Decimal {
-	if !income.IsPositive() {
+	if !income.IsPositive() || spent.IsZero() {
 		return nil
 	}
 	r := income.Sub(spent).Div(income).Mul(decimal.NewFromInt(100)).Round(1)
@@ -324,6 +325,17 @@ func previousPeriod(from, to time.Time) (time.Time, time.Time) {
 
 func daysBetween(from, to time.Time) int {
 	return int(to.Sub(from).Hours()/24) + 1
+}
+
+func elapsedDays(from, to, today time.Time) int {
+	end := to
+	if today.Before(end) {
+		end = today
+	}
+	if end.Before(from) {
+		return 1
+	}
+	return daysBetween(from, end)
 }
 
 func within(day, from, to time.Time) bool {
