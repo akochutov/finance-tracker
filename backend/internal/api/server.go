@@ -11,6 +11,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
+	"github.com/akochutov/finance-tracker/internal/expensedashboard"
 	"github.com/akochutov/finance-tracker/internal/income"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
@@ -36,6 +37,7 @@ type Server struct {
 	backfiller        *ratefetch.Backfiller
 	expenseCategories *expensecategory.Service
 	expenses          *expense.Service
+	expenseDashboard  *expensedashboard.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -55,6 +57,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		backfiller:        services.Backfiller,
 		expenseCategories: services.ExpenseCategory,
 		expenses:          services.Expense,
+		expenseDashboard:  services.ExpenseDashboard,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -105,6 +108,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/rate-providers", s.handleListRateProviders())
 
 	s.mux.HandleFunc("GET /api/dashboard", s.handleGetDashboard())
+	s.mux.HandleFunc("GET /api/dashboard/expenses", s.handleGetExpenseDashboard())
 
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/backfill", s.handleStartBackfill())
 	s.mux.HandleFunc("GET /api/rate-sources/{kind}/backfill", s.handleBackfillStatus())
