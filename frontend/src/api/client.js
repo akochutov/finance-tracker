@@ -207,6 +207,13 @@ export async function getDashboard() {
     return request("/api/dashboard");
 }
 
+// --- Expenses dashboard ---
+ 
+export async function getExpenseDashboard(from, to) {
+    const params = new URLSearchParams({ from, to });
+    return request(`/api/dashboard/expenses?${params}`);
+}
+
 // --- Expense groups & categories ---
 
 export async function getExpenseGroups() {
