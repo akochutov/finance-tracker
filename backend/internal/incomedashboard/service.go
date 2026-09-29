@@ -1,4 +1,4 @@
-package dashboard
+package incomedashboard
 
 import (
 	"context"
@@ -42,18 +42,18 @@ func NewService(
 func (s *Service) Get(ctx context.Context) (Dashboard, error) {
 	set, err := s.settings.Get(ctx)
 	if err != nil {
-		return Dashboard{}, fmt.Errorf("dashboard: read settings: %w", err)
+		return Dashboard{}, fmt.Errorf("income dashboard: read settings: %w", err)
 	}
 	base := set.BaseCurrency
 
 	incomes, err := s.incomes.List(ctx)
 	if err != nil {
-		return Dashboard{}, fmt.Errorf("dashboard: list incomes: %w", err)
+		return Dashboard{}, fmt.Errorf("income dashboard: list incomes: %w", err)
 	}
 
 	companies, err := s.companies.List(ctx)
 	if err != nil {
-		return Dashboard{}, fmt.Errorf("dashboard: list companies: %w", err)
+		return Dashboard{}, fmt.Errorf("income dashboard: list companies: %w", err)
 	}
 	names := make(map[uuid.UUID]string, len(companies))
 	for _, c := range companies {
@@ -94,7 +94,7 @@ func (s *Service) Get(ctx context.Context) (Dashboard, error) {
 				unconverted++
 				continue
 			}
-			return Dashboard{}, fmt.Errorf("dashboard: convert income %s: %w", in.ID, err)
+			return Dashboard{}, fmt.Errorf("income dashboard: convert income %s: %w", in.ID, err)
 		}
 		converted++
 

@@ -14,12 +14,12 @@ import (
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/config"
 	"github.com/akochutov/finance-tracker/internal/currency"
-	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/expensedashboard"
 	"github.com/akochutov/finance-tracker/internal/income"
+	"github.com/akochutov/finance-tracker/internal/incomedashboard"
 	"github.com/akochutov/finance-tracker/internal/platform/postgres"
 	"github.com/akochutov/finance-tracker/internal/platform/redis"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
@@ -93,7 +93,7 @@ func main() {
 		currencyService, rateSourceService, rateRegistry, exchangeRateService,
 	)
 
-	dashboardService := dashboard.NewService(
+	incomeDashboardService := incomedashboard.NewService(
 		incomeService, companyService, exchangeRateService, settingsService,
 	)
 
@@ -129,7 +129,7 @@ func main() {
 			ExchangeRate:     exchangeRateService,
 			RateSource:       rateSourceService,
 			RateFetch:        rateFetchService,
-			Dashboard:        dashboardService,
+			IncomeDashboard:  incomeDashboardService,
 			Backfiller:       backfiller,
 			ExpenseCategory:  expenseCategoryService,
 			Expense:          expenseService,

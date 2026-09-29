@@ -3,12 +3,12 @@ package api
 import (
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
-	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/expensedashboard"
 	"github.com/akochutov/finance-tracker/internal/income"
+	"github.com/akochutov/finance-tracker/internal/incomedashboard"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
@@ -25,9 +25,9 @@ type Services struct {
 	ExchangeRate     *exchangerate.Service
 	RateSource       *ratesource.Service
 	RateFetch        *ratefetch.Service
-	Dashboard        *dashboard.Service
+	IncomeDashboard  *incomedashboard.Service
+	ExpenseDashboard *expensedashboard.Service
 	Backfiller       *ratefetch.Backfiller
 	ExpenseCategory  *expensecategory.Service
 	Expense          *expense.Service
-	ExpenseDashboard *expensedashboard.Service
 }

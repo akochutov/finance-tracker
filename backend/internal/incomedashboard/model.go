@@ -1,4 +1,4 @@
-package dashboard
+package incomedashboard
 
 import "github.com/shopspring/decimal"
 

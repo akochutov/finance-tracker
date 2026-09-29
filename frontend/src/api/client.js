@@ -203,8 +203,8 @@ export async function getBackfillStatus(kind) {
 
 // --- Dashboard ---
 
-export async function getDashboard() {
-    return request("/api/dashboard");
+export async function getIncomeDashboard() {
+    return request("/api/dashboard/incomes");
 }
 
 // --- Expenses dashboard ---

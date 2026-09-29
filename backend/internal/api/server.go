@@ -7,12 +7,12 @@ import (
 
 	"github.com/akochutov/finance-tracker/internal/company"
 	"github.com/akochutov/finance-tracker/internal/currency"
-	"github.com/akochutov/finance-tracker/internal/dashboard"
 	"github.com/akochutov/finance-tracker/internal/exchangerate"
 	"github.com/akochutov/finance-tracker/internal/expense"
 	"github.com/akochutov/finance-tracker/internal/expensecategory"
 	"github.com/akochutov/finance-tracker/internal/expensedashboard"
 	"github.com/akochutov/finance-tracker/internal/income"
+	"github.com/akochutov/finance-tracker/internal/incomedashboard"
 	"github.com/akochutov/finance-tracker/internal/ratefetch"
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
@@ -33,7 +33,7 @@ type Server struct {
 	exchangeRates     *exchangerate.Service
 	rateSources       *ratesource.Service
 	rateFetch         *ratefetch.Service
-	dashboard         *dashboard.Service
+	incomeDashboard   *incomedashboard.Service
 	backfiller        *ratefetch.Backfiller
 	expenseCategories *expensecategory.Service
 	expenses          *expense.Service
@@ -53,7 +53,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		exchangeRates:     services.ExchangeRate,
 		rateSources:       services.RateSource,
 		rateFetch:         services.RateFetch,
-		dashboard:         services.Dashboard,
+		incomeDashboard:   services.IncomeDashboard,
 		backfiller:        services.Backfiller,
 		expenseCategories: services.ExpenseCategory,
 		expenses:          services.Expense,
@@ -107,7 +107,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/fetch", s.handleFetchRates())
 	s.mux.HandleFunc("GET /api/rate-providers", s.handleListRateProviders())
 
-	s.mux.HandleFunc("GET /api/dashboard", s.handleGetDashboard())
+	s.mux.HandleFunc("GET /api/dashboard/incomes", s.handleGetIncomeDashboard())
 	s.mux.HandleFunc("GET /api/dashboard/expenses", s.handleGetExpenseDashboard())
 
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/backfill", s.handleStartBackfill())
