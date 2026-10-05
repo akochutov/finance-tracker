@@ -27,6 +27,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/scheduler"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/tariff"
 	"github.com/akochutov/finance-tracker/internal/utility"
 )
 
@@ -122,6 +123,9 @@ func main() {
 	readingRepo := utility.NewReadingRepository(db)
 	utilityService := utility.NewService(serviceTypeRepo, addressRepo, accountRepo, meterRepo, readingRepo)
 
+	tariffRepo := tariff.NewRepository(db)
+	tariffService := tariff.NewService(tariffRepo)
+
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
 
@@ -143,6 +147,7 @@ func main() {
 			Expense:          expenseService,
 			ExpenseDashboard: expenseDashboardService,
 			Utility:          utilityService,
+			Tariff:           tariffService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
