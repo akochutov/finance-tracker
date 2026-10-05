@@ -20,4 +20,8 @@ var (
 	ErrReadingExists = errors.New("reading for this date already exists")
 
 	ErrInvalidInput = errors.New("invalid input")
+
+	ErrAddressInactive          = errors.New("address is inactive")
+	ErrAddressHasActiveAccounts = errors.New("address has active utility accounts")
+	ErrAccountInactive          = errors.New("utility account is inactive")
 )

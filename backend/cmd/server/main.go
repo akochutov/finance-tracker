@@ -27,6 +27,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/scheduler"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/utility"
 )
 
 func main() {
@@ -114,6 +115,13 @@ func main() {
 		expenseDashboardRepo, exchangeRateService, settingsService, incomeService,
 	)
 
+	serviceTypeRepo := utility.NewServiceTypeRepository(db)
+	addressRepo := utility.NewAddressRepository(db)
+	accountRepo := utility.NewAccountRepository(db)
+	meterRepo := utility.NewMeterRepository(db)
+	readingRepo := utility.NewReadingRepository(db)
+	utilityService := utility.NewService(serviceTypeRepo, addressRepo, accountRepo, meterRepo, readingRepo)
+
 	sched := scheduler.New(rateFetchService, rateSourceService)
 	sched.Start(ctx)
 
@@ -134,6 +142,7 @@ func main() {
 			ExpenseCategory:  expenseCategoryService,
 			Expense:          expenseService,
 			ExpenseDashboard: expenseDashboardService,
+			Utility:          utilityService,
 		}),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
