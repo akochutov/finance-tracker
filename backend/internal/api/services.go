@@ -13,6 +13,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/tariff"
 	"github.com/akochutov/finance-tracker/internal/utility"
 )
 
@@ -32,4 +33,5 @@ type Services struct {
 	ExpenseCategory  *expensecategory.Service
 	Expense          *expense.Service
 	Utility          *utility.Service
+	Tariff           *tariff.Service
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/tariff"
 	"github.com/akochutov/finance-tracker/internal/utility"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -40,6 +41,7 @@ type Server struct {
 	expenses          *expense.Service
 	expenseDashboard  *expensedashboard.Service
 	utilities         *utility.Service
+	tariffs           *tariff.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -61,6 +63,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		expenses:          services.Expense,
 		expenseDashboard:  services.ExpenseDashboard,
 		utilities:         services.Utility,
+		tariffs:           services.Tariff,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -159,6 +162,11 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/meters/{id}/readings", s.handleCreateReadings())
 	s.mux.HandleFunc("PUT /api/meters/{id}/readings/{rid}", s.handleUpdateReading())
 	s.mux.HandleFunc("DELETE /api/meters/{id}/readings/{rid}", s.handleDeleteReading())
+
+	s.mux.HandleFunc("GET /api/tariffs", s.handleListTariffs())
+	s.mux.HandleFunc("POST /api/tariffs", s.handleCreateTariff())
+	s.mux.HandleFunc("PUT /api/tariffs/{id}", s.handleUpdateTariff())
+	s.mux.HandleFunc("DELETE /api/tariffs/{id}", s.handleDeleteTariff())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

@@ -422,3 +422,28 @@ export async function updateReading(meterId, readingId, body) {
 export async function deleteReading(meterId, readingId) {
     return request(`/api/meters/${meterId}/readings/${readingId}`, { method: "DELETE" });
 }
+
+// --- Tariffs ---
+
+export async function getTariffs() {
+    const data = await request("/api/tariffs");
+    return data.tariffs;
+}
+
+export async function createTariff(tariff) {
+    return request("/api/tariffs", {
+        method: "POST",
+        body: JSON.stringify(tariff),
+    });
+}
+
+export async function updateTariff(id, fields) {
+    return request(`/api/tariffs/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(fields),
+    });
+}
+
+export async function deleteTariff(id) {
+    return request(`/api/tariffs/${id}`, { method: "DELETE" });
+}
