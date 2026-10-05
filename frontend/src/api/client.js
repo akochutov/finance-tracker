@@ -315,3 +315,110 @@ export async function getExpenseSuggestions() {
     const data = await request("/api/expenses/suggestions");
     return data.suggestions;
 }
+
+// --- Utilities: service types, addresses, accounts, meters, readings ---
+ 
+export async function getServiceTypes() {
+    const data = await request("/api/service-types");
+    return data.service_types;
+}
+ 
+export async function getAddresses() {
+    const data = await request("/api/addresses");
+    return data.addresses;
+}
+ 
+export async function createAddress(address) {
+    return request("/api/addresses", {
+        method: "POST",
+        body: JSON.stringify({ address }),
+    });
+}
+ 
+export async function updateAddress(id, address) {
+    return request(`/api/addresses/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ address }),
+    });
+}
+ 
+export async function deactivateAddress(id) {
+    return request(`/api/addresses/${id}`, { method: "DELETE" });
+}
+ 
+export async function activateAddress(id) {
+    return request(`/api/addresses/${id}/activate`, { method: "POST" });
+}
+ 
+export async function getUtilityAccounts() {
+    const data = await request("/api/utility-accounts");
+    return data.accounts;
+}
+ 
+export async function createUtilityAccount(account) {
+    return request("/api/utility-accounts", {
+        method: "POST",
+        body: JSON.stringify(account),
+    });
+}
+ 
+export async function updateUtilityAccount(id, number) {
+    return request(`/api/utility-accounts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ number }),
+    });
+}
+ 
+export async function deactivateUtilityAccount(id) {
+    return request(`/api/utility-accounts/${id}`, { method: "DELETE" });
+}
+ 
+export async function activateUtilityAccount(id) {
+    return request(`/api/utility-accounts/${id}/activate`, { method: "POST" });
+}
+ 
+export async function getMeters() {
+    const data = await request("/api/meters");
+    return data.meters;
+}
+
+export async function createMeter(meter) {
+    return request("/api/meters", {
+        method: "POST",
+        body: JSON.stringify(meter),
+    });
+}
+
+export async function updateMeter(id, fields) {
+    return request(`/api/meters/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(fields),
+    });
+}
+
+export async function deleteMeter(id) {
+    return request(`/api/meters/${id}`, { method: "DELETE" });
+}
+ 
+export async function getReadings(meterId) {
+    const data = await request(`/api/meters/${meterId}/readings`);
+    return data.readings;
+}
+
+export async function createReadings(meterId, body) {
+    return request(`/api/meters/${meterId}/readings`, {
+        method: "POST",
+        body: JSON.stringify(body),
+    });
+}
+
+export async function updateReading(meterId, readingId, body) {
+    return request(`/api/meters/${meterId}/readings/${readingId}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+    });
+}
+ 
+export async function deleteReading(meterId, readingId) {
+    return request(`/api/meters/${meterId}/readings/${readingId}`, { method: "DELETE" });
+}
