@@ -1256,3 +1256,260 @@ textarea:focus {
 @media (max-width: 1100px) {
   .id-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* ============================================================
+   Meters (mt-)
+   ============================================================ */
+/* tree on the left, selected meter on the right */
+.mt-layout {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* input + buttons in one line; the input takes the free space */
+.mt-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mt-inline-form .input { flex: 1; min-width: 0; }
+.mt-inline-form select.input { flex: 0 0 130px; }
+.mt-subform .input { flex: 1 1 140px; }
+.mt-inline-form input[type="date"].input { flex: 0 0 150px; }
+.mt-subform { margin: 10px 0 0; flex-wrap: wrap; }
+
+/* ---- Tree: address → accounts → meters ---------------------- */
+.mt-address {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.mt-address + .mt-address { margin-top: 12px; }
+.mt-address.inactive { border-style: dashed; opacity: 0.65; }
+
+/* address on its own line, its buttons underneath */
+.mt-address-head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+/* line the buttons up with the address text, past the ▶ toggle */
+.mt-address-head .mt-actions { padding-left: 22px; }
+.mt-address-name {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1 1 auto;       /* take the free width, leave the rest to the buttons */
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mt-address-name:focus { outline: none; }
+.mt-address-name:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: 3px; border-radius: 4px; }
+/* a flex item does not shrink below its content unless min-width is 0 */
+.mt-address-text { flex: 1 1 auto; min-width: 0; }
+/* long addresses wrap instead of running under the buttons */
+.mt-address-title {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.mt-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+.mt-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mt-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+.mt-account {
+  padding-left: 12px;
+  border-left: 2px solid #d0d9fb;
+}
+.mt-account.inactive { opacity: 0.55; }
+.mt-account-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* small text buttons inside the tree and the readings table */
+.mt-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-accent-700);
+  cursor: pointer;
+}
+.mt-link:hover { text-decoration: underline; }
+.mt-link-danger { color: #b42318; }
+
+.mt-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mt-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+.mt-meter:hover { background: color-mix(in srgb, var(--color-accent) 4%, transparent); }
+.mt-meter.selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-100);
+}
+/* no focus box on mouse click; a soft ring for keyboard focus */
+.mt-meter:focus { outline: none; }
+.mt-meter:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: 2px; }
+.mt-meter.removed { opacity: 0.6; }
+.mt-zone-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f3f7;
+  color: var(--color-neutral-700);
+}
+.mt-zone-badge.dual { background: #fff4e6; color: #c2410c; }
+.mt-since {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+
+/* ---- Selected meter ----------------------------------------- */
+.mt-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.mt-caption {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.mt-title {
+  margin-top: 6px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.mt-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.mt-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #f1f3f7;
+  font-size: 12px;
+  color: var(--color-neutral-800);
+}
+.mt-pill.accent {
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+  font-weight: 700;
+}
+
+.mt-section {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+.mt-section-title {
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-800);
+}
+.mt-reading-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.mt-reading-form .input { width: 150px; }
+.mt-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+
+/* date | for month | value | consumption | actions — a dual meter has two value pairs */
+.mt-readings { padding-top: 16px; }
+.mt-reading-row {
+  display: grid;
+  grid-template-columns: 130px 90px minmax(0, 1fr) minmax(0, 1fr) 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 6px;
+  border-bottom: 1px solid #eef0f5;
+  font-size: 14px;
+}
+.mt-reading-row.dual {
+  grid-template-columns: 130px 90px repeat(4, minmax(0, 1fr)) 110px;
+}
+.mt-reading-head {
+  border-bottom-color: var(--color-divider);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.mt-reading-row .input { width: 100%; min-width: 0; }
+.mt-delta { font-weight: 700; color: var(--color-accent-700); }
+.mt-delta.none { font-weight: 400; color: var(--color-neutral-500); }
+.mt-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 1100px) {
+  .mt-layout { grid-template-columns: minmax(0, 1fr); }
+}

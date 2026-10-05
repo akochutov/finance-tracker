@@ -17,6 +17,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/utility"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,6 +39,7 @@ type Server struct {
 	expenseCategories *expensecategory.Service
 	expenses          *expense.Service
 	expenseDashboard  *expensedashboard.Service
+	utilities         *utility.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -58,6 +60,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		expenseCategories: services.ExpenseCategory,
 		expenses:          services.Expense,
 		expenseDashboard:  services.ExpenseDashboard,
+		utilities:         services.Utility,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -132,6 +135,30 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("DELETE /api/expenses/{id}", s.handleDeleteExpense())
 
 	s.mux.HandleFunc("GET /api/expenses/suggestions", s.handleListExpenseSuggestions())
+
+	s.mux.HandleFunc("GET /api/service-types", s.handleListServiceTypes())
+
+	s.mux.HandleFunc("GET /api/addresses", s.handleListAddresses())
+	s.mux.HandleFunc("POST /api/addresses", s.handleCreateAddress())
+	s.mux.HandleFunc("PUT /api/addresses/{id}", s.handleUpdateAddress())
+	s.mux.HandleFunc("DELETE /api/addresses/{id}", s.handleDeactivateAddress())
+	s.mux.HandleFunc("POST /api/addresses/{id}/activate", s.handleActivateAddress())
+
+	s.mux.HandleFunc("GET /api/utility-accounts", s.handleListUtilityAccounts())
+	s.mux.HandleFunc("POST /api/utility-accounts", s.handleCreateUtilityAccount())
+	s.mux.HandleFunc("PUT /api/utility-accounts/{id}", s.handleUpdateUtilityAccount())
+	s.mux.HandleFunc("DELETE /api/utility-accounts/{id}", s.handleDeactivateUtilityAccount())
+	s.mux.HandleFunc("POST /api/utility-accounts/{id}/activate", s.handleActivateUtilityAccount())
+
+	s.mux.HandleFunc("GET /api/meters", s.handleListMeters())
+	s.mux.HandleFunc("POST /api/meters", s.handleCreateMeter())
+	s.mux.HandleFunc("PUT /api/meters/{id}", s.handleUpdateMeter())
+	s.mux.HandleFunc("DELETE /api/meters/{id}", s.handleDeleteMeter())
+
+	s.mux.HandleFunc("GET /api/meters/{id}/readings", s.handleListReadings())
+	s.mux.HandleFunc("POST /api/meters/{id}/readings", s.handleCreateReadings())
+	s.mux.HandleFunc("PUT /api/meters/{id}/readings/{rid}", s.handleUpdateReading())
+	s.mux.HandleFunc("DELETE /api/meters/{id}/readings/{rid}", s.handleDeleteReading())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

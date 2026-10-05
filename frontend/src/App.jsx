@@ -9,6 +9,7 @@ import IncomeDashboardPage from "./components/IncomeDashboardPage";
 import ExpenseCategoriesPage from "./components/ExpenseCategoriesPage";
 import ExpensesPage from "./components/ExpensesPage";
 import ExpensesDashboardPage from "./components/ExpensesDashboardPage";
+import MetersPage from "./components/MetersPage";
 
 function App() {
   return (
@@ -30,13 +31,13 @@ function App() {
           <NavLink to="/incomes" className="nav-link">Incomes</NavLink>
           <NavLink to="/expenses" className="nav-link">Expenses</NavLink>
           <NavLink to="/expense-categories" className="nav-link">Expense categories</NavLink>
+          <NavLink to="/meters" className="nav-link">Meters</NavLink>
           <NavLink to="/exchange-rates" className="nav-link">Exchange Rates</NavLink>
 
           <div className="sidebar-section-label">Configuration</div>
           <NavLink to="/settings" className="nav-link">Settings</NavLink>
 
           <div className="sidebar-section-label">Coming soon</div>
-          <span className="nav-link" style={{ color: "var(--color-neutral-500)", cursor: "default" }}>Meters</span>
           <span className="nav-link" style={{ color: "var(--color-neutral-500)", cursor: "default" }}>Tariffs</span>
           <span className="nav-link" style={{ color: "var(--color-neutral-500)", cursor: "default" }}>Reports</span>
         </nav>
@@ -54,6 +55,7 @@ function App() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/expenses-dashboard" element={<ExpensesDashboardPage />} />
           <Route path="/expense-categories" element={<ExpenseCategoriesPage />} />
+          <Route path="/meters" element={<MetersPage />} />
         </Routes>
       </main>
     </div>

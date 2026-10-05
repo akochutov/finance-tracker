@@ -13,6 +13,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/ratesource"
 	"github.com/akochutov/finance-tracker/internal/requisite"
 	"github.com/akochutov/finance-tracker/internal/settings"
+	"github.com/akochutov/finance-tracker/internal/utility"
 )
 
 type Services struct {
@@ -30,4 +31,5 @@ type Services struct {
 	Backfiller       *ratefetch.Backfiller
 	ExpenseCategory  *expensecategory.Service
 	Expense          *expense.Service
+	Utility          *utility.Service
 }
