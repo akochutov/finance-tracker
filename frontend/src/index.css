@@ -1513,3 +1513,62 @@ textarea:focus {
 @media (max-width: 1100px) {
   .mt-layout { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ============================================================
+   Tariffs (tf-) — reuses mt-pill, mt-link and mt-row-actions
+   ============================================================ */
+/* one card per service + zone */
+.tf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+/* price input with its currency on one line */
+.tf-price-input { display: flex; gap: 8px; }
+.tf-price-input .input:first-child { flex: 1; min-width: 0; }
+.tf-price-input select.input { flex: 0 0 90px; }
+
+.tf-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.tf-title {
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+/* the price in force today */
+.tf-current {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.tf-current-price {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* date | price | badge | actions */
+.tf-history { padding-top: 6px; }
+.tf-row {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 90px 100px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid #eef0f5;
+  font-size: 14px;
+}
+.tf-row:last-child { border-bottom: 0; }
+.tf-row.past { color: var(--color-neutral-700); }
+.tf-row-editing { grid-template-columns: 150px minmax(0, 1fr) 90px 100px; }
+.tf-row .input { width: 100%; min-width: 0; }
