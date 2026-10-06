@@ -23,7 +23,7 @@ func (s *Service) List(ctx context.Context) ([]Tariff, error) {
 	return s.repo.List(ctx)
 }
 
-func (s *Service) Create(ctx context.Context, service, zone string, validFrom time.Time, price decimal.Decimal, currency string) (Tariff, error) {
+func (s *Service) Create(ctx context.Context, service, zone string, validFrom time.Time, currency, tierMode string, tiers []Tier) (Tariff, error) {
 	service = strings.ToLower(strings.TrimSpace(service))
 	zone = strings.ToLower(strings.TrimSpace(zone))
 	if service == "" {
@@ -33,7 +33,7 @@ func (s *Service) Create(ctx context.Context, service, zone string, validFrom ti
 		return Tariff{}, err
 	}
 
-	validFrom, currency, err := normalize(validFrom, price, currency)
+	validFrom, currency, tierMode, err := normalize(validFrom, currency, tierMode, tiers)
 	if err != nil {
 		return Tariff{}, err
 	}
@@ -48,17 +48,18 @@ func (s *Service) Create(ctx context.Context, service, zone string, validFrom ti
 		Service:   service,
 		Zone:      zone,
 		ValidFrom: validFrom,
-		Price:     price,
 		Currency:  currency,
+		TierMode:  tierMode,
+		Tiers:     tiers,
 	})
 }
 
-func (s *Service) Update(ctx context.Context, id uuid.UUID, validFrom time.Time, price decimal.Decimal, currency string) (Tariff, error) {
-	validFrom, currency, err := normalize(validFrom, price, currency)
+func (s *Service) Update(ctx context.Context, id uuid.UUID, validFrom time.Time, currency, tierMode string, tiers []Tier) (Tariff, error) {
+	validFrom, currency, tierMode, err := normalize(validFrom, currency, tierMode, tiers)
 	if err != nil {
 		return Tariff{}, err
 	}
-	return s.repo.Update(ctx, id, validFrom, price, currency)
+	return s.repo.Update(ctx, id, validFrom, currency, tierMode, tiers)
 }
 
 func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
@@ -69,15 +70,49 @@ func (s *Service) ActiveAt(ctx context.Context, service, zone string, day time.T
 	return s.repo.ActiveAt(ctx, service, zone, dateOnly(day))
 }
 
+func Cost(t Tariff, volume, priced decimal.Decimal) decimal.Decimal {
+	if !volume.IsPositive() || !priced.IsPositive() || len(t.Tiers) == 0 {
+		return decimal.Zero
+	}
+
+	if t.TierMode != ModeProgressive {
+		return priced.Mul(tierFor(t.Tiers, volume).Price)
+	}
+
+	total := decimal.Zero
+	lower := decimal.Zero
+	remaining := volume
+	for _, tier := range t.Tiers {
+		part := remaining
+		if tier.UpTo != nil {
+			band := tier.UpTo.Sub(lower)
+			if part.GreaterThan(band) {
+				part = band
+			}
+			lower = *tier.UpTo
+		}
+		total = total.Add(part.Mul(tier.Price))
+		remaining = remaining.Sub(part)
+		if !remaining.IsPositive() {
+			break
+		}
+	}
+	return total.Mul(priced).Div(volume)
+}
+
+func tierFor(tiers []Tier, volume decimal.Decimal) Tier {
+	for _, tier := range tiers {
+		if tier.UpTo == nil || volume.LessThanOrEqual(*tier.UpTo) {
+			return tier
+		}
+	}
+	return tiers[len(tiers)-1]
+}
+
 func checkZone(service, zone string) error {
 	switch zone {
-	case utility.ZoneSingle:
+	case utility.ZoneSingle, utility.ZoneDay, utility.ZoneNight:
 		return nil
-	case utility.ZoneDay, utility.ZoneNight:
-		if service == utility.ServiceElectricity {
-			return nil
-		}
-		return fmt.Errorf("%w: only electricity has day and night tariffs", ErrInvalidInput)
 	case "":
 		return fmt.Errorf("%w: zone is required", ErrInvalidInput)
 	default:
@@ -85,18 +120,52 @@ func checkZone(service, zone string) error {
 	}
 }
 
-func normalize(validFrom time.Time, price decimal.Decimal, currency string) (time.Time, string, error) {
+func normalize(validFrom time.Time, currency, tierMode string, tiers []Tier) (time.Time, string, string, error) {
 	if validFrom.IsZero() {
-		return time.Time{}, "", fmt.Errorf("%w: start date is required", ErrInvalidInput)
-	}
-	if !price.IsPositive() {
-		return time.Time{}, "", fmt.Errorf("%w: price must be positive", ErrInvalidInput)
+		return time.Time{}, "", "", fmt.Errorf("%w: start date is required", ErrInvalidInput)
 	}
 	currency = strings.ToUpper(strings.TrimSpace(currency))
 	if currency == "" {
-		return time.Time{}, "", fmt.Errorf("%w: currency is required", ErrInvalidInput)
+		return time.Time{}, "", "", fmt.Errorf("%w: currency is required", ErrInvalidInput)
 	}
-	return dateOnly(validFrom), currency, nil
+	tierMode = strings.ToLower(strings.TrimSpace(tierMode))
+	if tierMode == "" {
+		tierMode = ModeWhole
+	}
+	if tierMode != ModeWhole && tierMode != ModeProgressive {
+		return time.Time{}, "", "", fmt.Errorf("%w: tier mode must be %q or %q", ErrInvalidInput, ModeWhole, ModeProgressive)
+	}
+	if err := checkTiers(tiers); err != nil {
+		return time.Time{}, "", "", err
+	}
+	return dateOnly(validFrom), currency, tierMode, nil
+}
+
+func checkTiers(tiers []Tier) error {
+	if len(tiers) == 0 {
+		return fmt.Errorf("%w: at least one price is required", ErrInvalidInput)
+	}
+	last := len(tiers) - 1
+	prev := decimal.Zero
+	for i, tier := range tiers {
+		if !tier.Price.IsPositive() {
+			return fmt.Errorf("%w: tier %d: price must be positive", ErrInvalidInput, i+1)
+		}
+		if i == last {
+			if tier.UpTo != nil {
+				return fmt.Errorf("%w: the last tier must have no upper bound", ErrInvalidInput)
+			}
+			break
+		}
+		if tier.UpTo == nil {
+			return fmt.Errorf("%w: tier %d: only the last tier can be open-ended", ErrInvalidInput, i+1)
+		}
+		if !tier.UpTo.GreaterThan(prev) {
+			return fmt.Errorf("%w: tier %d: bounds must grow (%s after %s)", ErrInvalidInput, i+1, tier.UpTo, prev)
+		}
+		prev = *tier.UpTo
+	}
+	return nil
 }
 
 func dateOnly(t time.Time) time.Time {
