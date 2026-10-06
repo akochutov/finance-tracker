@@ -1369,6 +1369,9 @@ textarea:focus {
 }
 .mt-link:hover { text-decoration: underline; }
 .mt-link-danger { color: #b42318; }
+/* no focus box on mouse click; a soft ring for keyboard focus */
+.mt-link:focus { outline: none; }
+.mt-link:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: 2px; border-radius: 2px; }
 
 .mt-meters {
   display: flex;
@@ -1480,28 +1483,6 @@ textarea:focus {
   color: var(--color-neutral-700);
 }
 
-/* date | for month | value | consumption | actions — a dual meter has two value pairs */
-.mt-readings { padding-top: 16px; }
-.mt-reading-row {
-  display: grid;
-  grid-template-columns: 130px 90px minmax(0, 1fr) minmax(0, 1fr) 110px;
-  gap: 12px;
-  align-items: center;
-  padding: 9px 6px;
-  border-bottom: 1px solid #eef0f5;
-  font-size: 14px;
-}
-.mt-reading-row.dual {
-  grid-template-columns: 130px 90px repeat(4, minmax(0, 1fr)) 110px;
-}
-.mt-reading-head {
-  border-bottom-color: var(--color-divider);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-neutral-700);
-}
-.mt-reading-row .input { width: 100%; min-width: 0; }
 .mt-delta { font-weight: 700; color: var(--color-accent-700); }
 .mt-delta.none { font-weight: 400; color: var(--color-neutral-500); }
 .mt-row-actions {
@@ -1561,7 +1542,7 @@ textarea:focus {
 .tf-history { padding-top: 6px; }
 .tf-row {
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr) 90px 100px;
+  grid-template-columns: 90px minmax(0, 1fr) auto auto;
   gap: 12px;
   align-items: center;
   padding: 8px 4px;
@@ -1570,5 +1551,186 @@ textarea:focus {
 }
 .tf-row:last-child { border-bottom: 0; }
 .tf-row.past { color: var(--color-neutral-700); }
-.tf-row-editing { grid-template-columns: 150px minmax(0, 1fr) 90px 100px; }
+/* price never wraps: "10.5 AMD" on one line */
+.tf-row .num { white-space: nowrap; text-align: right; }
+/* editing a price in a narrow card: date | price, then currency | actions */
+.tf-row-editing { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 8px; }
 .tf-row .input { width: 100%; min-width: 0; }
+
+/* ---- Meters: selected meter facts, new meter form ------------ */
+.mt-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding-top: 18px;
+}
+.mt-info-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+.mt-info-value {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.mt-info-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+
+/* two columns: serial | installed, initial value | its date */
+.mt-meter-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px dashed var(--color-accent-300);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+}
+.mt-meter-form .input { width: 100%; min-width: 0; }
+.mt-meter-form-hint { grid-column: 1 / -1; margin-top: 0; }
+.mt-meter-form-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+
+/* ============================================================
+   Readings (rd-) — the monthly round and the history
+   ============================================================ */
+.rd-form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.rd-form-head .mt-section-title { margin-bottom: 4px; }
+.rd-form-head .input { width: 170px; }
+
+/* meter | previous | new value | consumption */
+.rd-round-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px 170px 130px;
+  gap: 14px;
+  align-items: center;
+  padding: 7px 6px;
+  font-size: 14px;
+}
+.rd-round-row .input { width: 100%; min-width: 0; }
+.rd-round-head {
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+
+/* one account of the round with its meters */
+.rd-account {
+  padding: 10px 0 8px;
+  border-bottom: 1px solid #eef0f5;
+}
+.rd-account-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 6px 4px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.rd-negative { font-weight: 700; color: #b42318; }
+
+/* the provider's split of the billing month, under a day/night account */
+.rd-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 6px 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-accent-300);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+  font-size: 13px;
+}
+.rd-split-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-neutral-700);
+}
+.rd-split-field .input { width: 110px; }
+.rd-check { font-weight: 700; }
+.rd-split .rd-check { margin-left: auto; }
+.rd-check.ok { color: #2b8a3e; }
+.rd-check.bad { color: #c2410c; }
+
+.rd-form-foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.rd-form-foot .mt-hint { margin: 0 auto 0 0; }
+
+/* ---- History ------------------------------------------------- */
+.rd-hist-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.rd-hist-head .mt-section-title { margin-bottom: 0; }
+.rd-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rd-tab {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 12px;
+  color: var(--color-neutral-800);
+  cursor: pointer;
+}
+.rd-tab.active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-100);
+  color: var(--color-accent-700);
+  font-weight: 700;
+}
+.rd-tab.removed { opacity: 0.6; }
+.rd-tab:focus { outline: none; }
+.rd-tab:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: 2px; }
+
+/* date | for month | meter | consumption | actions;
+   a day/night account adds provider day | provider night | check */
+.rd-hist-row {
+  display: grid;
+  grid-template-columns: 130px 100px minmax(0, 1fr) minmax(0, 1fr) 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 9px 6px;
+  border-bottom: 1px solid #eef0f5;
+  font-size: 14px;
+}
+.rd-hist-row.day-night {
+  grid-template-columns: 130px 100px repeat(4, minmax(0, 1fr)) 120px 110px;
+}
+.rd-hist-row .input { width: 100%; min-width: 0; }
+.rd-hist-row.initial { color: var(--color-neutral-700); }
+.rd-hist-labels {
+  border-bottom-color: var(--color-divider);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+
+@media (max-width: 1100px) {
+  .rd-round-row { grid-template-columns: minmax(0, 1fr) 160px 140px 110px; }
+}

@@ -1,26 +1,17 @@
 import { useState, useEffect } from "react";
-import { getReadings, createReadings, updateReading, deleteReading } from "../api/client";
-import { formatISODate, todayISO } from "./expenseUtils";
-import { meterZones, zoneLabel, isDual, groupReadings, consumption, billingMonth, formatReading } from "./meterUtils";
+import { Link } from "react-router-dom";
+import { getReadings } from "../api/client";
+import { formatISODate } from "./expenseUtils";
+import { isDayNight, formatReading } from "./meterUtils";
 
 function MeterPanel({ meter, account, serviceType, actions }) {
-    const zones = meterZones(meter);
-    const dual = isDual(meter);
     const unit = serviceType ? serviceType.unit : "";
 
     const [readings, setReadings] = useState([]);
-    const [reloadKey, setReloadKey] = useState(0);
-    const [error, setError] = useState(null);
-
     const [editing, setEditing] = useState(false);
     const [serial, setSerial] = useState(meter.serial);
     const [installedOn, setInstalledOn] = useState(meter.installed_on.slice(0, 10));
     const [removedOn, setRemovedOn] = useState(meter.removed_on ? meter.removed_on.slice(0, 10) : "");
-
-    const [takenOn, setTakenOn] = useState(todayISO());
-    const [values, setValues] = useState({});
-
-    const [editRow, setEditRow] = useState(null);
 
     useEffect(() => {
         let ignore = false;
@@ -28,26 +19,13 @@ function MeterPanel({ meter, account, serviceType, actions }) {
             .then((data) => {
                 if (!ignore) setReadings(data);
             })
-            .catch((err) => {
-                if (!ignore) setError(err.message);
+            .catch(() => {
+                if (!ignore) setReadings([]);
             });
         return () => {
             ignore = true;
         };
-    }, [meter.id, reloadKey]);
-
-    async function run(action) {
-        setError(null);
-        try {
-            await action();
-            setReloadKey((k) => k + 1);
-            return true;
-        } catch (err) {
-            setError(err.message);
-            setReloadKey((k) => k + 1);
-            return false;
-        }
-    }
+    }, [meter.id, meter.updated_at]);
 
     async function saveMeter(e) {
         e.preventDefault();
@@ -65,42 +43,8 @@ function MeterPanel({ meter, account, serviceType, actions }) {
         }
     }
 
-    async function addReading(e) {
-        e.preventDefault();
-        const body = { taken_on: takenOn, values: {} };
-        for (const z of zones) body.values[z] = values[z] ?? "";
-        if (await run(() => createReadings(meter.id, body))) setValues({});
-    }
-
-    async function saveRow(row) {
-        const ok = await run(async () => {
-            for (const z of zones) {
-                const reading = row.byZone[z];
-                if (!reading) continue;
-                await updateReading(meter.id, reading.id, { taken_on: editRow.date, value: editRow.values[z] });
-            }
-        });
-        if (ok) setEditRow(null);
-    }
-
-    async function removeRow(row) {
-        if (!window.confirm(`Delete the reading of ${formatISODate(row.date)}?`)) return;
-        await run(async () => {
-            for (const z of zones) {
-                const reading = row.byZone[z];
-                if (reading) await deleteReading(meter.id, reading.id);
-            }
-        });
-    }
-
-    function startEditRow(row) {
-        const vals = {};
-        for (const z of zones) vals[z] = row.byZone[z] ? String(row.byZone[z].value) : "";
-        setEditRow({ key: row.date, date: row.date, values: vals });
-    }
-
-    const rows = groupReadings(meter, readings);
-    const rowClass = dual ? "mt-reading-row dual" : "mt-reading-row";
+    const initial = readings.find((r) => r.is_initial) || null;
+    const latest = readings[0] || null;
 
     return (
         <section className="xd-panel">
@@ -111,7 +55,7 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                     </div>
                     <div className="mt-title">Meter <span className="mono">{meter.serial}</span></div>
                     <div className="mt-pills">
-                        <span className="mt-pill accent">{dual ? "Day / night" : "Single"}</span>
+                        <span className="mt-pill accent">{isDayNight(account) ? "Day / night account" : "Single-zone account"}</span>
                         <span className="mt-pill">Installed {formatISODate(meter.installed_on)}</span>
                         {meter.removed_on && <span className="mt-pill">Removed {formatISODate(meter.removed_on)}</span>}
                         <span className="mt-pill">Unit: {unit}</span>
@@ -144,125 +88,30 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                         <button type="submit" className="btn btn-primary btn-sm">Save</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>
                     </div>
-                    <div className="mt-hint">Leave “Removed” empty while the meter is in place. Readings must stay within these dates.</div>
+                    <div className="mt-hint">Leave “Removed” empty while the meter is in place. All readings, the initial one included, must stay within these dates.</div>
                 </form>
             )}
 
-            {error && <div className="error" style={{ marginTop: 16 }}>{error}</div>}
-
-            {!meter.removed_on && (
-                <form className="mt-section" onSubmit={addReading}>
-                    <div className="mt-section-title">Add reading</div>
-                    <div className="mt-reading-form">
-                        <div className="field">
-                            <label>Date</label>
-                            <input className="input" type="date" value={takenOn} onChange={(e) => setTakenOn(e.target.value)} />
-                        </div>
-                        {zones.map((z) => (
-                            <div className="field" key={z}>
-                                <label>{zoneLabel(z)}, {unit}</label>
-                                <input
-                                    className="input mono"
-                                    type="number"
-                                    step="any"
-                                    min="0"
-                                    value={values[z] ?? ""}
-                                    onChange={(e) => setValues({ ...values, [z]: e.target.value })}
-                                />
-                            </div>
-                        ))}
-                        <button type="submit" className="btn btn-primary btn-sm">Save</button>
-                    </div>
-                    <div className="mt-hint">
-                        {dual ? "Both dials are saved together. " : ""}
-                        A value below the previous reading is rejected.
-                    </div>
-                </form>
-            )}
-
-            <div className="mt-readings">
-                <div className={`${rowClass} mt-reading-head`}>
-                    <span>Date</span>
-                    <span>For month</span>
-                    {zones.map((z) => (
-                        <ZoneHead key={z} zone={z} dual={dual} />
-                    ))}
-                    <span></span>
+            <div className="mt-info-grid">
+                <div>
+                    <div className="mt-info-label">Initial reading</div>
+                    <div className="mt-info-value mono">{initial ? `${formatReading(initial.value)} ${unit}` : "—"}</div>
+                    <div className="mt-info-sub">{initial ? `${formatISODate(initial.taken_on)} · not counted` : ""}</div>
                 </div>
-
-                {rows.map((row, i) =>
-                    editRow && editRow.key === row.date ? (
-                        <div key={row.date} className={rowClass}>
-                            <input
-                                className="input"
-                                type="date"
-                                value={editRow.date}
-                                onChange={(e) => setEditRow({ ...editRow, date: e.target.value })}
-                            />
-                            <span></span>
-                            {zones.map((z) => (
-                                <EditCells
-                                    key={z}
-                                    value={editRow.values[z]}
-                                    onChange={(v) => setEditRow({ ...editRow, values: { ...editRow.values, [z]: v } })}
-                                />
-                            ))}
-                            <span className="mt-row-actions">
-                                <button type="button" className="mt-link" onClick={() => saveRow(row)}>save</button>
-                                <button type="button" className="mt-link" onClick={() => setEditRow(null)}>cancel</button>
-                            </span>
-                        </div>
-                    ) : (
-                        <div key={row.date} className={rowClass}>
-                            <span>{formatISODate(row.date)}</span>
-                            <span className="row-meta">{i < rows.length - 1 ? billingMonth(row.date) : "—"}</span>
-                            {zones.map((z) => (
-                                <ValueCells key={z} reading={row.byZone[z]} delta={consumption(rows, i, z)} />
-                            ))}
-                            <span className="mt-row-actions">
-                                <button type="button" className="mt-link" onClick={() => startEditRow(row)}>edit</button>
-                                <button type="button" className="mt-link mt-link-danger" onClick={() => removeRow(row)}>delete</button>
-                            </span>
-                        </div>
-                    )
-                )}
-
-                {rows.length === 0 && <p className="xd-note">No readings yet. The first one is the starting point; consumption appears from the second.</p>}
+                <div>
+                    <div className="mt-info-label">Last reading</div>
+                    <div className="mt-info-value mono">{latest ? `${formatReading(latest.value)} ${unit}` : "—"}</div>
+                    <div className="mt-info-sub">{latest ? formatISODate(latest.taken_on) : ""}</div>
+                </div>
+                <div>
+                    <div className="mt-info-label">Readings</div>
+                    <div className="mt-info-value">{readings.length}</div>
+                    <div className="mt-info-sub">
+                        <Link to={`/readings?meter=${meter.id}`}>Open in Readings →</Link>
+                    </div>
+                </div>
             </div>
-
-            <p className="xd-note">
-                Consumption is the difference with the previous reading. A reading taken in early October closes September — the month of the bill.
-            </p>
         </section>
-    );
-}
-
-function ZoneHead({ zone, dual }) {
-    return (
-        <>
-            <span className="num">{dual ? zoneLabel(zone) : "Value"}</span>
-            <span className="num">{dual ? `Δ ${zoneLabel(zone).toLowerCase()}` : "Consumption"}</span>
-        </>
-    );
-}
-
-function ValueCells({ reading, delta }) {
-    return (
-        <>
-            <span className="num mono">{reading ? formatReading(reading.value) : "—"}</span>
-            <span className={delta === null ? "num mono mt-delta none" : "num mono mt-delta"}>
-                {delta === null ? "—" : `+${formatReading(delta)}`}
-            </span>
-        </>
-    );
-}
-
-function EditCells({ value, onChange }) {
-    return (
-        <>
-            <input className="input mono" type="number" step="any" min="0" value={value} onChange={(e) => onChange(e.target.value)} />
-            <span></span>
-        </>
     );
 }
 

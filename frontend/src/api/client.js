@@ -354,34 +354,54 @@ export async function getUtilityAccounts() {
     const data = await request("/api/utility-accounts");
     return data.accounts;
 }
- 
+
+// account: { address_id, service, number, zones: "single" | "day_night" }
 export async function createUtilityAccount(account) {
     return request("/api/utility-accounts", {
         method: "POST",
         body: JSON.stringify(account),
     });
 }
- 
+
 export async function updateUtilityAccount(id, number) {
     return request(`/api/utility-accounts/${id}`, {
         method: "PUT",
         body: JSON.stringify({ number }),
     });
 }
- 
+
 export async function deactivateUtilityAccount(id) {
     return request(`/api/utility-accounts/${id}`, { method: "DELETE" });
 }
- 
+
 export async function activateUtilityAccount(id) {
     return request(`/api/utility-accounts/${id}/activate`, { method: "POST" });
 }
- 
+
+// The provider's split of billing months by zone, for day/night accounts.
+export async function getZoneUsage(accountId) {
+    const data = await request(`/api/utility-accounts/${accountId}/zone-usage`);
+    return data.zone_usage;
+}
+
+// month: "YYYY-MM"; values: { day: "…", night: "…" }. Overwrites the month.
+export async function setZoneUsage(accountId, month, values) {
+    return request(`/api/utility-accounts/${accountId}/zone-usage`, {
+        method: "PUT",
+        body: JSON.stringify({ month, values }),
+    });
+}
+
+export async function deleteZoneUsage(accountId, month) {
+    return request(`/api/utility-accounts/${accountId}/zone-usage/${month}`, { method: "DELETE" });
+}
+
 export async function getMeters() {
     const data = await request("/api/meters");
     return data.meters;
 }
 
+// meter: { account_id, serial, installed_on, removed_on, initial_on, initial_value }
 export async function createMeter(meter) {
     return request("/api/meters", {
         method: "POST",
@@ -389,6 +409,7 @@ export async function createMeter(meter) {
     });
 }
 
+// fields: { serial, installed_on, removed_on }
 export async function updateMeter(id, fields) {
     return request(`/api/meters/${id}`, {
         method: "PUT",
@@ -396,29 +417,40 @@ export async function updateMeter(id, fields) {
     });
 }
 
+// Hard delete: the meter goes with all its readings.
 export async function deleteMeter(id) {
     return request(`/api/meters/${id}`, { method: "DELETE" });
 }
- 
+
+// --- Readings ---
+
+// The monthly round: { taken_on, readings: [{ meter_id, value }] }
+export async function createReadings(round) {
+    return request("/api/readings", {
+        method: "POST",
+        body: JSON.stringify(round),
+    });
+}
+
+// The newest reading of every meter.
+export async function getLatestReadings() {
+    const data = await request("/api/readings/latest");
+    return data.readings;
+}
+
 export async function getReadings(meterId) {
     const data = await request(`/api/meters/${meterId}/readings`);
     return data.readings;
 }
 
-export async function createReadings(meterId, body) {
-    return request(`/api/meters/${meterId}/readings`, {
-        method: "POST",
-        body: JSON.stringify(body),
-    });
-}
-
+// body: { taken_on, value }
 export async function updateReading(meterId, readingId, body) {
     return request(`/api/meters/${meterId}/readings/${readingId}`, {
         method: "PUT",
         body: JSON.stringify(body),
     });
 }
- 
+
 export async function deleteReading(meterId, readingId) {
     return request(`/api/meters/${meterId}/readings/${readingId}`, { method: "DELETE" });
 }

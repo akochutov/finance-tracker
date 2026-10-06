@@ -54,8 +54,8 @@ function MetersPage() {
         updateAddress: (id, address) => run(() => updateAddress(id, address)),
         setAddressActive: (id, active) => run(() => (active ? activateAddress(id) : deactivateAddress(id))),
 
-        createAccount: (addressId, service, number) =>
-            run(() => createUtilityAccount({ address_id: addressId, service, number })),
+        createAccount: (addressId, service, number, zones) =>
+            run(() => createUtilityAccount({ address_id: addressId, service, number, zones })),
         updateAccount: (id, number) => run(() => updateUtilityAccount(id, number)),
         setAccountActive: (id, active) =>
             run(() => (active ? activateUtilityAccount(id) : deactivateUtilityAccount(id))),
@@ -81,7 +81,7 @@ function MetersPage() {
         <div className="xd-page">
             <div className="page-header">
                 <h1>Meters</h1>
-                <p>Addresses, utility accounts, meters and their readings.</p>
+                <p>Addresses, accounts and meters.</p>
             </div>
 
             {error && <div className="error">{error}</div>}
@@ -108,7 +108,7 @@ function MetersPage() {
                         />
                     ) : (
                         <section className="xd-panel">
-                            <p className="xd-note">Add an address, a utility account and a meter to start recording readings.</p>
+                            <p className="xd-note">Add an address, a utility account and a meter; readings are entered on the Readings page.</p>
                         </section>
                     )}
                 </div>

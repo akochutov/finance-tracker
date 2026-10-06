@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatISODate, todayISO } from "./expenseUtils";
-import { isDual } from "./meterUtils";
+import { isDayNight, ZONES_SINGLE, ZONES_DAY_NIGHT } from "./meterUtils";
 
 function MetersTree({ addresses, accounts, meters, serviceTypes, selectedId, onSelect, actions }) {
     const [newAddress, setNewAddress] = useState("");
@@ -47,6 +47,7 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
     const [name, setName] = useState(address.address);
     const [service, setService] = useState(serviceTypes[0]?.code || "");
     const [number, setNumber] = useState("");
+    const [zones, setZones] = useState(ZONES_SINGLE);
 
     const meterCount = meters.filter((m) => accounts.some((acc) => acc.id === m.account_id)).length;
 
@@ -57,7 +58,10 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
 
     async function addAccount(e) {
         e.preventDefault();
-        if (await actions.createAccount(address.id, service, number)) setNumber("");
+        if (await actions.createAccount(address.id, service, number, zones)) {
+            setNumber("");
+            setZones(ZONES_SINGLE);
+        }
     }
 
     return (
@@ -120,6 +124,11 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
                                 value={number}
                                 onChange={(e) => setNumber(e.target.value)}
                             />
+                            {/* Zones are a term of the contract: chosen once, never changed */}
+                            <select className="input" value={zones} onChange={(e) => setZones(e.target.value)}>
+                                <option value={ZONES_SINGLE}>Single zone</option>
+                                <option value={ZONES_DAY_NIGHT}>Day / night</option>
+                            </select>
                             <button type="submit" className="btn btn-secondary btn-sm">+ Account</button>
                         </form>
                     )}
@@ -135,9 +144,8 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
     const [adding, setAdding] = useState(false);
     const [serial, setSerial] = useState("");
     const [installedOn, setInstalledOn] = useState(todayISO());
-    const [dual, setDual] = useState(false);
-
-    const canBeDual = account.service === "electricity";
+    const [initialValue, setInitialValue] = useState("");
+    const [initialOn, setInitialOn] = useState("");
 
     async function saveNumber(e) {
         e.preventDefault();
@@ -151,12 +159,14 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
             serial,
             installed_on: installedOn,
             removed_on: null,
-            dual: canBeDual && dual,
+            initial_on: initialOn || null,
+            initial_value: initialValue === "" ? null : initialValue,
         });
         if (ok) {
             setAdding(false);
             setSerial("");
-            setDual(false);
+            setInitialValue("");
+            setInitialOn("");
         }
     }
 
@@ -172,7 +182,10 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
                 <div className="mt-account-head">
                     <span>
                         <strong>{serviceType ? serviceType.name : account.service}</strong>{" "}
-                        <span className="mono row-meta">· {account.number}</span>
+                        <span className="mono row-meta">· {account.number}</span>{" "}
+                        <span className={isDayNight(account) ? "mt-zone-badge dual" : "mt-zone-badge"}>
+                            {isDayNight(account) ? "day/night" : "single"}
+                        </span>
                         {!account.is_active && <span className="row-meta"> · inactive</span>}
                     </span>
                     <span className="mt-actions">
@@ -197,9 +210,6 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
                     return (
                         <button type="button" key={m.id} className={classes.join(" ")} onClick={() => onSelect(m.id)}>
                             <span className="mono">{m.serial}</span>
-                            <span className={isDual(m) ? "mt-zone-badge dual" : "mt-zone-badge"}>
-                                {isDual(m) ? "day/night" : "single"}
-                            </span>
                             <span className="mt-since">
                                 {m.removed_on
                                     ? `removed ${formatISODate(m.removed_on)}`
@@ -211,17 +221,38 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
             </div>
 
             {adding && (
-                <form className="mt-inline-form mt-subform" onSubmit={addMeter}>
-                    <input className="input" placeholder="Serial number" value={serial} onChange={(e) => setSerial(e.target.value)} />
-                    <input className="input" type="date" value={installedOn} onChange={(e) => setInstalledOn(e.target.value)} />
-                    {canBeDual && (
-                        <label className="checkbox">
-                            <input type="checkbox" checked={dual} onChange={(e) => setDual(e.target.checked)} />
-                            Day / night
-                        </label>
-                    )}
-                    <button type="submit" className="btn btn-primary btn-sm">Add</button>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+                <form className="mt-meter-form" onSubmit={addMeter}>
+                    <div className="field">
+                        <label>Serial</label>
+                        <input className="input" value={serial} onChange={(e) => setSerial(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Installed</label>
+                        <input className="input" type="date" value={installedOn} onChange={(e) => setInstalledOn(e.target.value)} />
+                    </div>
+                    <div className="field">
+                        <label>Initial value{serviceType ? `, ${serviceType.unit}` : ""}</label>
+                        <input
+                            className="input mono"
+                            type="number"
+                            step="any"
+                            min="0"
+                            value={initialValue}
+                            onChange={(e) => setInitialValue(e.target.value)}
+                        />
+                    </div>
+                    <div className="field">
+                        <label>Initial value on</label>
+                        <input className="input" type="date" value={initialOn} onChange={(e) => setInitialOn(e.target.value)} />
+                    </div>
+                    <div className="mt-hint mt-meter-form-hint">
+                        The value on the meter when tracking starts — not counted as consumption.
+                        Leave the date empty to use the installation day; set it to the move-in day otherwise.
+                    </div>
+                    <div className="mt-meter-form-actions">
+                        <button type="submit" className="btn btn-primary btn-sm">Add</button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(false)}>Cancel</button>
+                    </div>
                 </form>
             )}
         </div>

@@ -167,6 +167,11 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/meters/{id}/readings", s.handleListReadings())
 	s.mux.HandleFunc("PUT /api/meters/{id}/readings/{rid}", s.handleUpdateReading())
 	s.mux.HandleFunc("DELETE /api/meters/{id}/readings/{rid}", s.handleDeleteReading())
+
+	s.mux.HandleFunc("GET /api/tariffs", s.handleListTariffs())
+	s.mux.HandleFunc("POST /api/tariffs", s.handleCreateTariff())
+	s.mux.HandleFunc("PUT /api/tariffs/{id}", s.handleUpdateTariff())
+	s.mux.HandleFunc("DELETE /api/tariffs/{id}", s.handleDeleteTariff())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {
