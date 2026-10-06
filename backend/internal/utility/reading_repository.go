@@ -13,7 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const readingColumns = "id, register_id, taken_on, value, created_at, updated_at"
+const readingColumns = "id, meter_id, taken_on, value, is_initial, created_at, updated_at"
 
 type ReadingRepository struct {
 	db *pgxpool.Pool
@@ -30,20 +30,11 @@ func (r *ReadingRepository) CreateBatch(ctx context.Context, readings []Reading)
 	}
 	defer tx.Rollback(ctx)
 
-	const q = `
-		INSERT INTO readings (id, register_id, taken_on, value)
-		VALUES ($1, $2, $3, $4)
-		RETURNING ` + readingColumns
-
 	out := make([]Reading, 0, len(readings))
 	for _, rd := range readings {
-		var saved Reading
-		err := scanReading(tx.QueryRow(ctx, q, rd.ID, rd.RegisterID, rd.TakenOn, rd.Value), &saved)
+		saved, err := insertReading(ctx, tx, rd)
 		if err != nil {
-			if mapped := readingWriteError(err); mapped != nil {
-				return nil, mapped
-			}
-			return nil, fmt.Errorf("insert reading: %w", err)
+			return nil, err
 		}
 		out = append(out, saved)
 	}
@@ -71,52 +62,42 @@ func (r *ReadingRepository) GetByID(ctx context.Context, id uuid.UUID) (Reading,
 
 func (r *ReadingRepository) ListByMeter(ctx context.Context, meterID uuid.UUID) ([]Reading, error) {
 	const q = `
-		SELECT rd.id, rd.register_id, rd.taken_on, rd.value, rd.created_at, rd.updated_at
-		FROM readings rd
-		JOIN meter_registers reg ON reg.id = rd.register_id
-		WHERE reg.meter_id = $1
-		ORDER BY rd.taken_on DESC, reg.zone`
+		SELECT ` + readingColumns + `
+		FROM readings
+		WHERE meter_id = $1
+		ORDER BY taken_on DESC`
 
-	rows, err := r.db.Query(ctx, q, meterID)
-	if err != nil {
-		return nil, fmt.Errorf("list readings: %w", err)
-	}
-	defer rows.Close()
-
-	readings := make([]Reading, 0)
-	for rows.Next() {
-		var rd Reading
-		if err := scanReading(rows, &rd); err != nil {
-			return nil, fmt.Errorf("scan readings: %w", err)
-		}
-		readings = append(readings, rd)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate readings: %w", err)
-	}
-
-	return readings, nil
+	return r.list(ctx, q, meterID)
 }
 
-func (r *ReadingRepository) Neighbors(ctx context.Context, registerID uuid.UUID, day time.Time, excludeID uuid.UUID) (*Reading, *Reading, error) {
+func (r *ReadingRepository) LatestPerMeter(ctx context.Context) ([]Reading, error) {
+	const q = `
+		SELECT DISTINCT ON (meter_id) ` + readingColumns + `
+		FROM readings
+		ORDER BY meter_id, taken_on DESC`
+
+	return r.list(ctx, q)
+}
+
+func (r *ReadingRepository) Neighbors(ctx context.Context, meterID uuid.UUID, day time.Time, excludeID uuid.UUID) (*Reading, *Reading, error) {
 	const prevQ = `
 		SELECT ` + readingColumns + `
 		FROM readings
-		WHERE register_id = $1 AND taken_on < $2 AND id <> $3
+		WHERE meter_id = $1 AND taken_on < $2 AND id <> $3
 		ORDER BY taken_on DESC
 		LIMIT 1`
 	const nextQ = `
 		SELECT ` + readingColumns + `
 		FROM readings
-		WHERE register_id = $1 AND taken_on > $2 AND id <> $3
+		WHERE meter_id = $1 AND taken_on > $2 AND id <> $3
 		ORDER BY taken_on
 		LIMIT 1`
 
-	prev, err := r.optionalReading(ctx, prevQ, registerID, day, excludeID)
+	prev, err := r.optionalReading(ctx, prevQ, meterID, day, excludeID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("previous reading: %w", err)
 	}
-	next, err := r.optionalReading(ctx, nextQ, registerID, day, excludeID)
+	next, err := r.optionalReading(ctx, nextQ, meterID, day, excludeID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("next reading: %w", err)
 	}
@@ -158,6 +139,46 @@ func (r *ReadingRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func insertReading(ctx context.Context, tx pgx.Tx, rd Reading) (Reading, error) {
+	const q = `
+		INSERT INTO readings (id, meter_id, taken_on, value, is_initial)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING ` + readingColumns
+
+	var out Reading
+	err := scanReading(tx.QueryRow(ctx, q, rd.ID, rd.MeterID, rd.TakenOn, rd.Value, rd.IsInitial), &out)
+	if err != nil {
+		if mapped := readingWriteError(err); mapped != nil {
+			return Reading{}, mapped
+		}
+		return Reading{}, fmt.Errorf("insert reading: %w", err)
+	}
+
+	return out, nil
+}
+
+func (r *ReadingRepository) list(ctx context.Context, q string, args ...any) ([]Reading, error) {
+	rows, err := r.db.Query(ctx, q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list readings: %w", err)
+	}
+	defer rows.Close()
+
+	readings := make([]Reading, 0)
+	for rows.Next() {
+		var rd Reading
+		if err := scanReading(rows, &rd); err != nil {
+			return nil, fmt.Errorf("scan readings: %w", err)
+		}
+		readings = append(readings, rd)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate readings: %w", err)
+	}
+
+	return readings, nil
+}
+
 func (r *ReadingRepository) optionalReading(ctx context.Context, q string, args ...any) (*Reading, error) {
 	var rd Reading
 	if err := scanReading(r.db.QueryRow(ctx, q, args...), &rd); err != nil {
@@ -175,10 +196,12 @@ func readingWriteError(err error) error {
 		return nil
 	}
 	switch pgErr.ConstraintName {
-	case "uq_readings_register_day":
+	case "uq_readings_meter_day":
 		return ErrReadingExists
-	case "readings_register_id_fkey":
-		return fmt.Errorf("%w: unknown meter register", ErrInvalidInput)
+	case "uq_readings_initial":
+		return fmt.Errorf("%w: the meter already has an initial reading", ErrInvalidInput)
+	case "readings_meter_id_fkey":
+		return ErrMeterNotFound
 	case "readings_value_check":
 		return fmt.Errorf("%w: reading must not be negative", ErrInvalidInput)
 	}
@@ -186,5 +209,5 @@ func readingWriteError(err error) error {
 }
 
 func scanReading(row pgx.Row, rd *Reading) error {
-	return row.Scan(&rd.ID, &rd.RegisterID, &rd.TakenOn, &rd.Value, &rd.CreatedAt, &rd.UpdatedAt)
+	return row.Scan(&rd.ID, &rd.MeterID, &rd.TakenOn, &rd.Value, &rd.IsInitial, &rd.CreatedAt, &rd.UpdatedAt)
 }

@@ -153,20 +153,20 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("DELETE /api/utility-accounts/{id}", s.handleDeactivateUtilityAccount())
 	s.mux.HandleFunc("POST /api/utility-accounts/{id}/activate", s.handleActivateUtilityAccount())
 
+	s.mux.HandleFunc("GET /api/utility-accounts/{id}/zone-usage", s.handleListZoneUsage())
+	s.mux.HandleFunc("PUT /api/utility-accounts/{id}/zone-usage", s.handleSetZoneUsage())
+	s.mux.HandleFunc("DELETE /api/utility-accounts/{id}/zone-usage/{month}", s.handleDeleteZoneUsage())
+
 	s.mux.HandleFunc("GET /api/meters", s.handleListMeters())
 	s.mux.HandleFunc("POST /api/meters", s.handleCreateMeter())
 	s.mux.HandleFunc("PUT /api/meters/{id}", s.handleUpdateMeter())
 	s.mux.HandleFunc("DELETE /api/meters/{id}", s.handleDeleteMeter())
 
+	s.mux.HandleFunc("POST /api/readings", s.handleCreateReadings())
+	s.mux.HandleFunc("GET /api/readings/latest", s.handleLatestReadings())
 	s.mux.HandleFunc("GET /api/meters/{id}/readings", s.handleListReadings())
-	s.mux.HandleFunc("POST /api/meters/{id}/readings", s.handleCreateReadings())
 	s.mux.HandleFunc("PUT /api/meters/{id}/readings/{rid}", s.handleUpdateReading())
 	s.mux.HandleFunc("DELETE /api/meters/{id}/readings/{rid}", s.handleDeleteReading())
-
-	s.mux.HandleFunc("GET /api/tariffs", s.handleListTariffs())
-	s.mux.HandleFunc("POST /api/tariffs", s.handleCreateTariff())
-	s.mux.HandleFunc("PUT /api/tariffs/{id}", s.handleUpdateTariff())
-	s.mux.HandleFunc("DELETE /api/tariffs/{id}", s.handleDeleteTariff())
 }
 
 func (s *Server) handleHealthz() http.HandlerFunc {

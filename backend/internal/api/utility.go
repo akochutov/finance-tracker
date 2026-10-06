@@ -12,6 +12,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const monthLayout = "2006-01"
+
+// --- DTOs ---
+
 type listServiceTypesResponse struct {
 	ServiceTypes []utility.ServiceType `json:"service_types"`
 }
@@ -32,6 +36,10 @@ type listReadingsResponse struct {
 	Readings []utility.Reading `json:"readings"`
 }
 
+type listZoneUsageResponse struct {
+	ZoneUsage []utility.ZoneUsage `json:"zone_usage"`
+}
+
 type addressRequest struct {
 	Address string `json:"address"`
 }
@@ -40,6 +48,7 @@ type createUtilityAccountRequest struct {
 	AddressID uuid.UUID `json:"address_id"`
 	Service   string    `json:"service"`
 	Number    string    `json:"number"`
+	Zones     string    `json:"zones"`
 }
 
 type updateUtilityAccountRequest struct {
@@ -47,11 +56,12 @@ type updateUtilityAccountRequest struct {
 }
 
 type createMeterRequest struct {
-	AccountID   uuid.UUID `json:"account_id"`
-	Serial      string    `json:"serial"`
-	InstalledOn string    `json:"installed_on"`
-	RemovedOn   *string   `json:"removed_on"`
-	Dual        bool      `json:"dual"`
+	AccountID    uuid.UUID        `json:"account_id"`
+	Serial       string           `json:"serial"`
+	InstalledOn  string           `json:"installed_on"`
+	RemovedOn    *string          `json:"removed_on"`
+	InitialOn    *string          `json:"initial_on"`
+	InitialValue *decimal.Decimal `json:"initial_value"`
 }
 
 type updateMeterRequest struct {
@@ -61,14 +71,24 @@ type updateMeterRequest struct {
 }
 
 type createReadingsRequest struct {
-	TakenOn string                     `json:"taken_on"`
-	Values  map[string]decimal.Decimal `json:"values"`
+	TakenOn  string `json:"taken_on"`
+	Readings []struct {
+		MeterID uuid.UUID        `json:"meter_id"`
+		Value   *decimal.Decimal `json:"value"`
+	} `json:"readings"`
 }
 
 type updateReadingRequest struct {
 	TakenOn string           `json:"taken_on"`
 	Value   *decimal.Decimal `json:"value"`
 }
+
+type setZoneUsageRequest struct {
+	Month  string                     `json:"month"`
+	Values map[string]decimal.Decimal `json:"values"`
+}
+
+// --- Helpers ---
 
 func pathUUID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, bool) {
 	id, err := uuid.Parse(r.PathValue(name))
@@ -87,9 +107,18 @@ func parseDay(value, field string) (time.Time, error) {
 	return t, nil
 }
 
+func parseMonth(value, field string) (time.Time, error) {
+	t, err := time.Parse(monthLayout, value)
+	if err != nil {
+		return time.Time{}, errors.New(field + " must be YYYY-MM")
+	}
+	return t, nil
+}
+
 func writeUtilityError(w http.ResponseWriter, err error, op string) {
 	switch {
-	case errors.Is(err, utility.ErrInvalidInput):
+	case errors.Is(err, utility.ErrInvalidInput),
+		errors.Is(err, utility.ErrInitialReadingRequired):
 		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, utility.ErrAddressNotFound),
 		errors.Is(err, utility.ErrAccountNotFound),
@@ -102,13 +131,17 @@ func writeUtilityError(w http.ResponseWriter, err error, op string) {
 		errors.Is(err, utility.ErrReadingExists),
 		errors.Is(err, utility.ErrAddressInactive),
 		errors.Is(err, utility.ErrAddressHasActiveAccounts),
-		errors.Is(err, utility.ErrAccountInactive):
+		errors.Is(err, utility.ErrAccountInactive),
+		errors.Is(err, utility.ErrInitialReadingLocked),
+		errors.Is(err, utility.ErrZonesNotSplit):
 		writeError(w, http.StatusConflict, err.Error())
 	default:
 		log.Printf("%s: %v", op, err)
 		writeError(w, http.StatusInternalServerError, "internal error")
 	}
 }
+
+// --- Service types ---
 
 func (s *Server) handleListServiceTypes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -120,6 +153,8 @@ func (s *Server) handleListServiceTypes() http.HandlerFunc {
 		writeJSON(w, http.StatusOK, listServiceTypesResponse{ServiceTypes: list})
 	}
 }
+
+// --- Addresses ---
 
 func (s *Server) handleListAddresses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -199,6 +234,8 @@ func (s *Server) handleActivateAddress() http.HandlerFunc {
 	}
 }
 
+// --- Utility accounts ---
+
 func (s *Server) handleListUtilityAccounts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.utilities.ListAccounts(r.Context())
@@ -222,7 +259,7 @@ func (s *Server) handleCreateUtilityAccount() http.HandlerFunc {
 			return
 		}
 
-		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number)
+		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number, req.Zones)
 		if err != nil {
 			writeUtilityError(w, err, "create utility account")
 			return
@@ -281,6 +318,73 @@ func (s *Server) handleActivateUtilityAccount() http.HandlerFunc {
 	}
 }
 
+// --- Provider's split by zone ---
+
+func (s *Server) handleListZoneUsage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountID, ok := pathUUID(w, r, "id")
+		if !ok {
+			return
+		}
+
+		list, err := s.utilities.ListZoneUsage(r.Context(), accountID)
+		if err != nil {
+			writeUtilityError(w, err, "list zone usage")
+			return
+		}
+		writeJSON(w, http.StatusOK, listZoneUsageResponse{ZoneUsage: list})
+	}
+}
+
+func (s *Server) handleSetZoneUsage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountID, ok := pathUUID(w, r, "id")
+		if !ok {
+			return
+		}
+
+		var req setZoneUsageRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+		month, err := parseMonth(req.Month, "month")
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		saved, err := s.utilities.SetZoneUsage(r.Context(), accountID, month, req.Values)
+		if err != nil {
+			writeUtilityError(w, err, "set zone usage")
+			return
+		}
+		writeJSON(w, http.StatusOK, listZoneUsageResponse{ZoneUsage: saved})
+	}
+}
+
+func (s *Server) handleDeleteZoneUsage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountID, ok := pathUUID(w, r, "id")
+		if !ok {
+			return
+		}
+		month, err := parseMonth(r.PathValue("month"), "month")
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		if err := s.utilities.DeleteZoneUsage(r.Context(), accountID, month); err != nil {
+			writeUtilityError(w, err, "delete zone usage")
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// --- Meters ---
+
 func (s *Server) handleListMeters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.utilities.ListMeters(r.Context())
@@ -313,8 +417,17 @@ func (s *Server) handleCreateMeter() http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "removed_on must be YYYY-MM-DD")
 			return
 		}
+		initialOn, err := parseOptionalDate(req.InitialOn)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "initial_on must be YYYY-MM-DD")
+			return
+		}
+		var initialDay time.Time
+		if initialOn != nil {
+			initialDay = *initialOn
+		}
 
-		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, installedOn, removedOn, req.Dual)
+		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, installedOn, removedOn, initialDay, req.InitialValue)
 		if err != nil {
 			writeUtilityError(w, err, "create meter")
 			return
@@ -369,6 +482,54 @@ func (s *Server) handleDeleteMeter() http.HandlerFunc {
 	}
 }
 
+// --- Readings ---
+
+func (s *Server) handleCreateReadings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req createReadingsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid JSON")
+			return
+		}
+		takenOn, err := parseDay(req.TakenOn, "taken_on")
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		values := make(map[uuid.UUID]decimal.Decimal, len(req.Readings))
+		for _, rd := range req.Readings {
+			if rd.MeterID == uuid.Nil || rd.Value == nil {
+				writeError(w, http.StatusBadRequest, "each reading needs meter_id and value")
+				return
+			}
+			if _, dup := values[rd.MeterID]; dup {
+				writeError(w, http.StatusBadRequest, "a meter appears twice in one round")
+				return
+			}
+			values[rd.MeterID] = *rd.Value
+		}
+
+		created, err := s.utilities.CreateReadings(r.Context(), takenOn, values)
+		if err != nil {
+			writeUtilityError(w, err, "create readings")
+			return
+		}
+		writeJSON(w, http.StatusCreated, listReadingsResponse{Readings: created})
+	}
+}
+
+func (s *Server) handleLatestReadings() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		list, err := s.utilities.LatestReadings(r.Context())
+		if err != nil {
+			writeUtilityError(w, err, "latest readings")
+			return
+		}
+		writeJSON(w, http.StatusOK, listReadingsResponse{Readings: list})
+	}
+}
+
 func (s *Server) handleListReadings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		meterID, ok := pathUUID(w, r, "id")
@@ -382,33 +543,6 @@ func (s *Server) handleListReadings() http.HandlerFunc {
 			return
 		}
 		writeJSON(w, http.StatusOK, listReadingsResponse{Readings: list})
-	}
-}
-
-func (s *Server) handleCreateReadings() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		meterID, ok := pathUUID(w, r, "id")
-		if !ok {
-			return
-		}
-
-		var req createReadingsRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON")
-			return
-		}
-		takenOn, err := parseDay(req.TakenOn, "taken_on")
-		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		created, err := s.utilities.CreateReadings(r.Context(), meterID, takenOn, req.Values)
-		if err != nil {
-			writeUtilityError(w, err, "create readings")
-			return
-		}
-		writeJSON(w, http.StatusCreated, listReadingsResponse{Readings: created})
 	}
 }
 

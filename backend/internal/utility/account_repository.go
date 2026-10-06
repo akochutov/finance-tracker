@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const accountColumns = "id, address_id, service, number, is_active, created_at, updated_at"
+const accountColumns = "id, address_id, service, number, zones, is_active, created_at, updated_at"
 
 type AccountRepository struct {
 	db *pgxpool.Pool
@@ -23,15 +23,14 @@ func NewAccountRepository(db *pgxpool.Pool) *AccountRepository {
 
 func (r *AccountRepository) Create(ctx context.Context, account Account) (Account, error) {
 	const q = `
-		INSERT INTO accounts (id, address_id, service, number, is_active)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO accounts (id, address_id, service, number, zones, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING ` + accountColumns
 
 	var out Account
-	err := scanAccount(
-		r.db.QueryRow(
-			ctx, q, account.ID, account.AddressID, account.Service, account.Number, account.IsActive,
-		), &out)
+	err := scanAccount(r.db.QueryRow(ctx, q,
+		account.ID, account.AddressID, account.Service, account.Number, account.Zones, account.IsActive,
+	), &out)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
@@ -42,6 +41,8 @@ func (r *AccountRepository) Create(ctx context.Context, account Account) (Accoun
 				return Account{}, ErrAddressNotFound
 			case pgErr.ConstraintName == "accounts_service_fkey":
 				return Account{}, fmt.Errorf("%w: unknown service", ErrInvalidInput)
+			case pgErr.ConstraintName == "accounts_zones_check":
+				return Account{}, fmt.Errorf("%w: unknown tariff zones", ErrInvalidInput)
 			}
 		}
 		return Account{}, fmt.Errorf("insert account: %w", err)
@@ -125,5 +126,5 @@ func (r *AccountRepository) SetActive(ctx context.Context, id uuid.UUID, active 
 }
 
 func scanAccount(row pgx.Row, a *Account) error {
-	return row.Scan(&a.ID, &a.AddressID, &a.Service, &a.Number, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
+	return row.Scan(&a.ID, &a.AddressID, &a.Service, &a.Number, &a.Zones, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
 }
