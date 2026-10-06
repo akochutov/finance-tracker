@@ -10,6 +10,7 @@ import ExpenseCategoriesPage from "./components/ExpenseCategoriesPage";
 import ExpensesPage from "./components/ExpensesPage";
 import ExpensesDashboardPage from "./components/ExpensesDashboardPage";
 import MetersPage from "./components/MetersPage";
+import ReadingsPage from "./components/ReadingsPage";
 import TariffsPage from "./components/TariffsPage";
 
 function App() {
@@ -27,15 +28,16 @@ function App() {
           <NavLink to="/expenses-dashboard" className="nav-link">Expenses</NavLink>
 
           <div className="sidebar-section-label">Ledger</div>
-          <NavLink to="/expenses" className="nav-link">Expenses</NavLink>
           <NavLink to="/incomes" className="nav-link">Incomes</NavLink>
-          <NavLink to="/meters" className="nav-link">Meters</NavLink>
+          <NavLink to="/expenses" className="nav-link">Expenses</NavLink>
+          <NavLink to="/readings" className="nav-link">Readings</NavLink>
 
           <div className="sidebar-section-label">Reference</div>
           <NavLink to="/companies" className="nav-link">Companies</NavLink>
           <NavLink to="/currencies" className="nav-link">Currencies</NavLink>
           <NavLink to="/exchange-rates" className="nav-link">Exchange Rates</NavLink>
           <NavLink to="/expense-categories" className="nav-link">Expense categories</NavLink>
+          <NavLink to="/meters" className="nav-link">Meters</NavLink>
           <NavLink to="/tariffs" className="nav-link">Tariffs</NavLink>
 
           <div className="sidebar-section-label">Configuration</div>
@@ -56,6 +58,7 @@ function App() {
           <Route path="/expenses-dashboard" element={<ExpensesDashboardPage />} />
           <Route path="/expense-categories" element={<ExpenseCategoriesPage />} />
           <Route path="/meters" element={<MetersPage />} />
+          <Route path="/readings" element={<ReadingsPage />} />
           <Route path="/tariffs" element={<TariffsPage />} />
         </Routes>
       </main>

@@ -121,7 +121,8 @@ func main() {
 	accountRepo := utility.NewAccountRepository(db)
 	meterRepo := utility.NewMeterRepository(db)
 	readingRepo := utility.NewReadingRepository(db)
-	utilityService := utility.NewService(serviceTypeRepo, addressRepo, accountRepo, meterRepo, readingRepo)
+	zoneUsageRepo := utility.NewZoneUsageRepository(db)
+	utilityService := utility.NewService(serviceTypeRepo, addressRepo, accountRepo, meterRepo, readingRepo, zoneUsageRepo)
 
 	tariffRepo := tariff.NewRepository(db)
 	tariffService := tariff.NewService(tariffRepo)

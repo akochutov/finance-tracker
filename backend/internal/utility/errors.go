@@ -19,9 +19,13 @@ var (
 	ErrSerialTaken   = errors.New("meter with this serial already exists on the account")
 	ErrReadingExists = errors.New("reading for this date already exists")
 
-	ErrInvalidInput = errors.New("invalid input")
-
 	ErrAddressInactive          = errors.New("address is inactive")
 	ErrAddressHasActiveAccounts = errors.New("address has active utility accounts")
 	ErrAccountInactive          = errors.New("utility account is inactive")
+
+	ErrInitialReadingRequired = errors.New("initial reading is required")
+	ErrInitialReadingLocked   = errors.New("the initial reading cannot be deleted; edit it or delete the meter")
+	ErrZonesNotSplit          = errors.New("this account has a single tariff zone")
+
+	ErrInvalidInput = errors.New("invalid input")
 )
