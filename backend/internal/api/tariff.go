@@ -14,18 +14,36 @@ type listTariffsResponse struct {
 	Tariffs []tariff.Tariff `json:"tariffs"`
 }
 
+type tierRequest struct {
+	UpTo  *decimal.Decimal `json:"up_to"`
+	Price *decimal.Decimal `json:"price"`
+}
+
 type createTariffRequest struct {
-	Service   string           `json:"service"`
-	Zone      string           `json:"zone"`
-	ValidFrom string           `json:"valid_from"`
-	Price     *decimal.Decimal `json:"price"`
-	Currency  string           `json:"currency"`
+	Service   string        `json:"service"`
+	Zone      string        `json:"zone"`
+	ValidFrom string        `json:"valid_from"`
+	Currency  string        `json:"currency"`
+	TierMode  string        `json:"tier_mode"`
+	Tiers     []tierRequest `json:"tiers"`
 }
 
 type updateTariffRequest struct {
-	ValidFrom string           `json:"valid_from"`
-	Price     *decimal.Decimal `json:"price"`
-	Currency  string           `json:"currency"`
+	ValidFrom string        `json:"valid_from"`
+	Currency  string        `json:"currency"`
+	TierMode  string        `json:"tier_mode"`
+	Tiers     []tierRequest `json:"tiers"`
+}
+
+func toTiers(in []tierRequest) ([]tariff.Tier, error) {
+	out := make([]tariff.Tier, 0, len(in))
+	for _, t := range in {
+		if t.Price == nil {
+			return nil, errors.New("every tier needs a price")
+		}
+		out = append(out, tariff.Tier{UpTo: t.UpTo, Price: *t.Price})
+	}
+	return out, nil
 }
 
 func writeTariffError(w http.ResponseWriter, err error, op string) {
@@ -65,12 +83,13 @@ func (s *Server) handleCreateTariff() http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		if req.Price == nil {
-			writeError(w, http.StatusBadRequest, "price is required")
+		tiers, err := toTiers(req.Tiers)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		created, err := s.tariffs.Create(r.Context(), req.Service, req.Zone, validFrom, *req.Price, req.Currency)
+		created, err := s.tariffs.Create(r.Context(), req.Service, req.Zone, validFrom, req.Currency, req.TierMode, tiers)
 		if err != nil {
 			writeTariffError(w, err, "create tariff")
 			return
@@ -96,12 +115,13 @@ func (s *Server) handleUpdateTariff() http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		if req.Price == nil {
-			writeError(w, http.StatusBadRequest, "price is required")
+		tiers, err := toTiers(req.Tiers)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
-		updated, err := s.tariffs.Update(r.Context(), id, validFrom, *req.Price, req.Currency)
+		updated, err := s.tariffs.Update(r.Context(), id, validFrom, req.Currency, req.TierMode, tiers)
 		if err != nil {
 			writeTariffError(w, err, "update tariff")
 			return
