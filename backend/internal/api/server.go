@@ -19,6 +19,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/settings"
 	"github.com/akochutov/finance-tracker/internal/tariff"
 	"github.com/akochutov/finance-tracker/internal/utility"
+	"github.com/akochutov/finance-tracker/internal/utilitydashboard"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -42,6 +43,7 @@ type Server struct {
 	expenseDashboard  *expensedashboard.Service
 	utilities         *utility.Service
 	tariffs           *tariff.Service
+	utilityDashboard  *utilitydashboard.Service
 }
 
 func New(db *pgxpool.Pool, services Services) *Server {
@@ -64,6 +66,7 @@ func New(db *pgxpool.Pool, services Services) *Server {
 		expenseDashboard:  services.ExpenseDashboard,
 		utilities:         services.Utility,
 		tariffs:           services.Tariff,
+		utilityDashboard:  services.UtilityDashboard,
 	}
 	s.routes()
 	s.handler = corsMiddleware(s.mux)
@@ -115,6 +118,7 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /api/dashboard/incomes", s.handleGetIncomeDashboard())
 	s.mux.HandleFunc("GET /api/dashboard/expenses", s.handleGetExpenseDashboard())
+	s.mux.HandleFunc("GET /api/dashboard/utilities", s.handleGetUtilityDashboard())
 
 	s.mux.HandleFunc("POST /api/rate-sources/{kind}/backfill", s.handleStartBackfill())
 	s.mux.HandleFunc("GET /api/rate-sources/{kind}/backfill", s.handleBackfillStatus())
