@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { getTariffs, createTariff, updateTariff, deleteTariff, getServiceTypes, getCurrencies } from "../api/client";
 import { todayISO } from "./expenseUtils";
 import TariffCard from "./TariffCard";
-
-function zonesFor(service) {
-    return service === "electricity" ? ["single", "day", "night"] : ["single"];
-}
+import TierEditor from "./TierEditor";
+import { ZONES, MODE_WHOLE, emptyTiers, tiersToRequest } from "./tariffUtils";
 
 const ZONE_ORDER = { single: 0, day: 1, night: 2 };
 
@@ -19,8 +17,9 @@ function TariffsPage() {
     const [service, setService] = useState("electricity");
     const [zone, setZone] = useState("single");
     const [validFrom, setValidFrom] = useState(todayISO());
-    const [price, setPrice] = useState("");
     const [currency, setCurrency] = useState("AMD");
+    const [tiers, setTiers] = useState(emptyTiers());
+    const [mode, setMode] = useState(MODE_WHOLE);
 
     async function loadTariffs() {
         setTariffs(await getTariffs());
@@ -54,17 +53,22 @@ function TariffsPage() {
         }
     }
 
-    function changeService(code) {
-        setService(code);
-        if (!zonesFor(code).includes(zone)) setZone("single");
-    }
-
     async function handleCreate(e) {
         e.preventDefault();
         const ok = await run(() =>
-            createTariff({ service, zone, valid_from: validFrom, price: price === "" ? null : price, currency })
+            createTariff({
+                service,
+                zone,
+                valid_from: validFrom,
+                currency,
+                tier_mode: mode,
+                tiers: tiersToRequest(tiers),
+            })
         );
-        if (ok) setPrice("");
+        if (ok) {
+            setTiers(emptyTiers());
+            setMode(MODE_WHOLE);
+        }
     }
 
     const actions = {
@@ -87,7 +91,7 @@ function TariffsPage() {
         <div className="xd-page">
             <div className="page-header">
                 <h1>Tariffs</h1>
-                <p>Price per unit for each service, valid from a date until the next price.</p>
+                <p>Prices per unit, flat or by monthly volume.</p>
             </div>
 
             {error && <div className="error">{error}</div>}
@@ -100,7 +104,7 @@ function TariffsPage() {
                         <div className="form-grid">
                             <div className="field">
                                 <label>Service</label>
-                                <select className="input" value={service} onChange={(e) => changeService(e.target.value)}>
+                                <select className="input" value={service} onChange={(e) => setService(e.target.value)}>
                                     {serviceTypes.map((t) => (
                                         <option key={t.code} value={t.code}>{t.name}</option>
                                     ))}
@@ -109,7 +113,7 @@ function TariffsPage() {
                             <div className="field">
                                 <label>Zone</label>
                                 <select className="input" value={zone} onChange={(e) => setZone(e.target.value)}>
-                                    {zonesFor(service).map((z) => (
+                                    {ZONES.map((z) => (
                                         <option key={z} value={z}>{z}</option>
                                     ))}
                                 </select>
@@ -119,24 +123,22 @@ function TariffsPage() {
                                 <input className="input" type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
                             </div>
                             <div className="field">
-                                <label>Price</label>
-                                <div className="tf-price-input">
-                                    <input
-                                        className="input mono"
-                                        type="number"
-                                        step="any"
-                                        min="0"
-                                        value={price}
-                                        onChange={(e) => setPrice(e.target.value)}
-                                    />
-                                    <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                                        {currencies.map((c) => (
-                                            <option key={c.code} value={c.code}>{c.code}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <label>Currency</label>
+                                <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                                    {currencies.map((c) => (
+                                        <option key={c.code} value={c.code}>{c.code}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
+                        <TierEditor
+                            tiers={tiers}
+                            onChange={setTiers}
+                            mode={mode}
+                            onModeChange={setMode}
+                            unit={serviceTypes.find((t) => t.code === service)?.unit}
+                            currency={currency}
+                        />
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary">Add</button>
                         </div>

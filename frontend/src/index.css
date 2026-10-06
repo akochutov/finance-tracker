@@ -1501,15 +1501,10 @@ textarea:focus {
 /* one card per service + zone */
 .tf-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
   gap: 16px;
   align-items: start;
 }
-
-/* price input with its currency on one line */
-.tf-price-input { display: flex; gap: 8px; }
-.tf-price-input .input:first-child { flex: 1; min-width: 0; }
-.tf-price-input select.input { flex: 0 0 90px; }
 
 .tf-head {
   display: flex;
@@ -1521,21 +1516,6 @@ textarea:focus {
   font-size: 15px;
   font-weight: 800;
   text-transform: capitalize;
-}
-
-/* the price in force today */
-.tf-current {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 14px 0 16px;
-  border-bottom: 1px solid var(--color-divider);
-}
-.tf-current-price {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
 }
 
 /* date | price | badge | actions */
@@ -1552,9 +1532,13 @@ textarea:focus {
 .tf-row:last-child { border-bottom: 0; }
 .tf-row.past { color: var(--color-neutral-700); }
 /* price never wraps: "10.5 AMD" on one line */
-.tf-row .num { white-space: nowrap; text-align: right; }
-/* editing a price in a narrow card: date | price, then currency | actions */
-.tf-row-editing { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 8px; }
+.tf-row .num {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
 .tf-row .input { width: 100%; min-width: 0; }
 
 /* ---- Meters: selected meter facts, new meter form ------------ */
@@ -1733,4 +1717,133 @@ textarea:focus {
 
 @media (max-width: 1100px) {
   .rd-round-row { grid-template-columns: minmax(0, 1fr) 160px 140px 110px; }
+}
+
+/* ---- Tariffs: prices in force, by tier ------------------------ */
+.tf-current {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.tf-current-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+}
+.tf-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+/* range | price */
+.tf-tier-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 14px;
+  color: var(--color-neutral-800);
+}
+.tf-tier-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* ---- Tariffs: tier editor (add form and card edit) ------------ */
+.tf-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 18px;
+}
+/* tier | up to | price | remove */
+.tf-tier-row {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) minmax(0, 1fr) 28px;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.tf-tier-row .input { width: 100%; min-width: 0; }
+.tf-tier-head {
+  margin-bottom: 4px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+/* the last tier has no bound: a muted placeholder instead of an input */
+.tf-and-above {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px dashed var(--color-neutral-300);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--color-neutral-500);
+}
+.tf-remove {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+}
+.tf-remove:hover { color: #b42318; }
+.tf-add { margin-top: 2px; }
+
+.tf-modes {
+  padding: 14px 16px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+  background: var(--color-bg, #f7f8fb);
+}
+.tf-modes .mt-info-label { margin-bottom: 10px; }
+.tf-mode {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.tf-mode input { margin-top: 2px; }
+.tf-mode-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+.tf-mode-note {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* editing a tariff inside its card: the editor stacks in one column */
+.tf-edit {
+  margin: 8px 0;
+  padding: 14px;
+  border: 1px dashed var(--color-accent-300);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+}
+.tf-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.tf-edit-fields .input { width: 100%; min-width: 0; }
+.tf-edit .tf-editor { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+.tf-edit-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+@media (max-width: 1100px) {
+  .tf-editor { grid-template-columns: minmax(0, 1fr); }
 }
