@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getReadings } from "../api/client";
 import { formatISODate } from "./expenseUtils";
-import { isDayNight, formatReading } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, groupByDate, formatReading } from "./meterUtils";
 
 function MeterPanel({ meter, account, serviceType, actions }) {
     const unit = serviceType ? serviceType.unit : "";
@@ -43,8 +43,21 @@ function MeterPanel({ meter, account, serviceType, actions }) {
         }
     }
 
-    const initial = readings.find((r) => r.is_initial) || null;
-    const latest = readings[0] || null;
+    const zones = zonesOf(meter);
+    const rounds = groupByDate(readings);
+    const initial = rounds.find((g) => g.is_initial) || null;
+    const latest = rounds[0] || null;
+
+    function valuesOf(round) {
+        if (!round) return "—";
+        return zones
+            .map((z) => {
+                const r = round.byZone[z];
+                const value = r ? formatReading(r.value) : "—";
+                return zoneLabel(z) ? `${zoneLabel(z).toLowerCase()} ${value}` : value;
+            })
+            .join(" · ") + ` ${unit}`;
+    }
 
     return (
         <section className="xd-panel">
@@ -55,7 +68,7 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                     </div>
                     <div className="mt-title">Meter <span className="mono">{meter.serial}</span></div>
                     <div className="mt-pills">
-                        <span className="mt-pill accent">{isDayNight(account) ? "Day / night account" : "Single-zone account"}</span>
+                        <span className="mt-pill accent">{isDayNight(meter) ? "Day / night registers" : "Single register"}</span>
                         <span className="mt-pill">Installed {formatISODate(meter.installed_on)}</span>
                         {meter.removed_on && <span className="mt-pill">Removed {formatISODate(meter.removed_on)}</span>}
                         <span className="mt-pill">Unit: {unit}</span>
@@ -95,17 +108,17 @@ function MeterPanel({ meter, account, serviceType, actions }) {
             <div className="mt-info-grid">
                 <div>
                     <div className="mt-info-label">Initial reading</div>
-                    <div className="mt-info-value mono">{initial ? `${formatReading(initial.value)} ${unit}` : "—"}</div>
+                    <div className="mt-info-value mono">{initial ? valuesOf(initial) : "—"}</div>
                     <div className="mt-info-sub">{initial ? `${formatISODate(initial.taken_on)} · not counted` : ""}</div>
                 </div>
                 <div>
                     <div className="mt-info-label">Last reading</div>
-                    <div className="mt-info-value mono">{latest ? `${formatReading(latest.value)} ${unit}` : "—"}</div>
+                    <div className="mt-info-value mono">{latest ? valuesOf(latest) : "—"}</div>
                     <div className="mt-info-sub">{latest ? formatISODate(latest.taken_on) : ""}</div>
                 </div>
                 <div>
                     <div className="mt-info-label">Readings</div>
-                    <div className="mt-info-value">{readings.length}</div>
+                    <div className="mt-info-value">{rounds.length}</div>
                     <div className="mt-info-sub">
                         <Link to={`/readings?meter=${meter.id}`}>Open in Readings →</Link>
                     </div>

@@ -8,10 +8,8 @@ const PALETTES = {
     water: ["#0b7285", "#66d9e8", "#1098ad", "#99e9f2"],
 };
 const FALLBACK = ["#5c7cfa", "#20c997", "#fab005", "#e64980"];
-const UNSPLIT_COLOR = "#ced4da";
 
-export function seriesColor(service, series, i) {
-    if (series.kind === "unsplit") return UNSPLIT_COLOR;
+export function seriesColor(service, i) {
     const palette = PALETTES[service] || FALLBACK;
     return palette[i % palette.length];
 }
@@ -51,7 +49,7 @@ function ServiceCard({ block, currency, compare, prevLabel }) {
     const paid = Number(sum.paid);
     const change = percentChange(estimated, prev.estimated);
     const nothingToCompare = estimated === 0 && Number(prev.estimated) === 0;
-    const color = seriesColor(block.service, { kind: "meter" }, 0);
+    const color = seriesColor(block.service, 0);
 
     const consumption = sum.zones.length > 0
         ? sum.zones.map((z) => `${z.zone} ${formatQty(z.quantity)}`).join(" · ") + ` ${block.unit}`
@@ -84,7 +82,7 @@ function ServiceCard({ block, currency, compare, prevLabel }) {
 
             {sum.months_without_tariff > 0 && (
                 <div className="xd-kpi-sub xd-up">
-                    {sum.months_without_tariff} {sum.months_without_tariff === 1 ? "month" : "months"} without a tariff or a split
+                    {sum.months_without_tariff} {sum.months_without_tariff === 1 ? "month" : "months"} without a tariff
                 </div>
             )}
 
@@ -164,12 +162,12 @@ export function ConsumptionChart({ block, months, inPeriod }) {
     const series = block.series.map((s, i) => ({
         key: s.key,
         label: s.label,
-        color: seriesColor(block.service, s, i),
+        color: seriesColor(block.service, i),
         values: s.consumption.map(num),
     }));
     const zones = block.series.some((s) => s.kind === "zone");
     const note = zones
-        ? "Day and night from the provider's split; months still waiting for it show as Unsplit."
+        ? "Day and night from the meter's registers."
         : block.series.length > 1
             ? "One column per meter."
             : null;
@@ -275,7 +273,6 @@ export function MonthTable({ services, months, inPeriod }) {
 export function CoverageNote({ coverage }) {
     const parts = [];
     if (coverage.missing_tariffs.length) parts.push(`no tariff: ${coverage.missing_tariffs.join(", ")}`);
-    if (coverage.missing_splits.length) parts.push(`no provider split: ${coverage.missing_splits.join(", ")}`);
     if (coverage.missing_rates.length) parts.push(`no exchange rate: ${coverage.missing_rates.join(", ")}`);
     if (parts.length === 0) return null;
     return <p className="xd-note">Incomplete — {parts.join("; ")}.</p>;

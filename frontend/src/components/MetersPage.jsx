@@ -56,12 +56,11 @@ function MetersPage() {
         updateAddress: (id, address) => run(() => updateAddress(id, address)),
         setAddressActive: (id, active) => run(() => (active ? activateAddress(id) : deactivateAddress(id))),
 
-        createAccount: (addressId, service, number, zones, categoryId) =>
+        createAccount: (addressId, service, number, categoryId) =>
             run(() => createUtilityAccount({
                 address_id: addressId,
                 service,
                 number,
-                zones,
                 expense_category_id: categoryId || null,
             })),
         updateAccount: (id, number, categoryId) => run(() => updateUtilityAccount(id, number, categoryId)),
