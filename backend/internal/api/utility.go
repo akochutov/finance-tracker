@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/akochutov/finance-tracker/internal/utility"
@@ -34,10 +35,6 @@ type listReadingsResponse struct {
 	Readings []utility.Reading `json:"readings"`
 }
 
-type listZoneUsageResponse struct {
-	ZoneUsage []utility.ZoneUsage `json:"zone_usage"`
-}
-
 type addressRequest struct {
 	Address string `json:"address"`
 }
@@ -46,7 +43,6 @@ type createUtilityAccountRequest struct {
 	AddressID         uuid.UUID  `json:"address_id"`
 	Service           string     `json:"service"`
 	Number            string     `json:"number"`
-	Zones             string     `json:"zones"`
 	ExpenseCategoryID *uuid.UUID `json:"expense_category_id"`
 }
 
@@ -56,12 +52,13 @@ type updateUtilityAccountRequest struct {
 }
 
 type createMeterRequest struct {
-	AccountID    uuid.UUID        `json:"account_id"`
-	Serial       string           `json:"serial"`
-	InstalledOn  string           `json:"installed_on"`
-	RemovedOn    *string          `json:"removed_on"`
-	InitialOn    *string          `json:"initial_on"`
-	InitialValue *decimal.Decimal `json:"initial_value"`
+	AccountID     uuid.UUID                  `json:"account_id"`
+	Serial        string                     `json:"serial"`
+	Registers     string                     `json:"registers"`
+	InstalledOn   string                     `json:"installed_on"`
+	RemovedOn     *string                    `json:"removed_on"`
+	InitialOn     *string                    `json:"initial_on"`
+	InitialValues map[string]decimal.Decimal `json:"initial_values"`
 }
 
 type updateMeterRequest struct {
@@ -74,6 +71,7 @@ type createReadingsRequest struct {
 	TakenOn  string `json:"taken_on"`
 	Readings []struct {
 		MeterID uuid.UUID        `json:"meter_id"`
+		Zone    string           `json:"zone"`
 		Value   *decimal.Decimal `json:"value"`
 	} `json:"readings"`
 }
@@ -81,11 +79,6 @@ type createReadingsRequest struct {
 type updateReadingRequest struct {
 	TakenOn string           `json:"taken_on"`
 	Value   *decimal.Decimal `json:"value"`
-}
-
-type setZoneUsageRequest struct {
-	Month  string                     `json:"month"`
-	Values map[string]decimal.Decimal `json:"values"`
 }
 
 func pathUUID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, bool) {
@@ -130,8 +123,7 @@ func writeUtilityError(w http.ResponseWriter, err error, op string) {
 		errors.Is(err, utility.ErrAddressInactive),
 		errors.Is(err, utility.ErrAddressHasActiveAccounts),
 		errors.Is(err, utility.ErrAccountInactive),
-		errors.Is(err, utility.ErrInitialReadingLocked),
-		errors.Is(err, utility.ErrZonesNotSplit):
+		errors.Is(err, utility.ErrInitialReadingLocked):
 		writeError(w, http.StatusConflict, err.Error())
 	default:
 		log.Printf("%s: %v", op, err)
@@ -251,7 +243,7 @@ func (s *Server) handleCreateUtilityAccount() http.HandlerFunc {
 			return
 		}
 
-		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number, req.Zones, req.ExpenseCategoryID)
+		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number, req.ExpenseCategoryID)
 		if err != nil {
 			writeUtilityError(w, err, "create utility account")
 			return
@@ -310,69 +302,6 @@ func (s *Server) handleActivateUtilityAccount() http.HandlerFunc {
 	}
 }
 
-func (s *Server) handleListZoneUsage() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		accountID, ok := pathUUID(w, r, "id")
-		if !ok {
-			return
-		}
-
-		list, err := s.utilities.ListZoneUsage(r.Context(), accountID)
-		if err != nil {
-			writeUtilityError(w, err, "list zone usage")
-			return
-		}
-		writeJSON(w, http.StatusOK, listZoneUsageResponse{ZoneUsage: list})
-	}
-}
-
-func (s *Server) handleSetZoneUsage() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		accountID, ok := pathUUID(w, r, "id")
-		if !ok {
-			return
-		}
-
-		var req setZoneUsageRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON")
-			return
-		}
-		month, err := parseMonth(req.Month, "month")
-		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		saved, err := s.utilities.SetZoneUsage(r.Context(), accountID, month, req.Values)
-		if err != nil {
-			writeUtilityError(w, err, "set zone usage")
-			return
-		}
-		writeJSON(w, http.StatusOK, listZoneUsageResponse{ZoneUsage: saved})
-	}
-}
-
-func (s *Server) handleDeleteZoneUsage() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		accountID, ok := pathUUID(w, r, "id")
-		if !ok {
-			return
-		}
-		month, err := parseMonth(r.PathValue("month"), "month")
-		if err != nil {
-			writeError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		if err := s.utilities.DeleteZoneUsage(r.Context(), accountID, month); err != nil {
-			writeUtilityError(w, err, "delete zone usage")
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
 func (s *Server) handleListMeters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.utilities.ListMeters(r.Context())
@@ -415,7 +344,7 @@ func (s *Server) handleCreateMeter() http.HandlerFunc {
 			initialDay = *initialOn
 		}
 
-		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, installedOn, removedOn, initialDay, req.InitialValue)
+		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, req.Registers, installedOn, removedOn, initialDay, req.InitialValues)
 		if err != nil {
 			writeUtilityError(w, err, "create meter")
 			return
@@ -483,17 +412,24 @@ func (s *Server) handleCreateReadings() http.HandlerFunc {
 			return
 		}
 
-		values := make(map[uuid.UUID]decimal.Decimal, len(req.Readings))
+		values := make(map[uuid.UUID]map[string]decimal.Decimal, len(req.Readings))
 		for _, rd := range req.Readings {
 			if rd.MeterID == uuid.Nil || rd.Value == nil {
 				writeError(w, http.StatusBadRequest, "each reading needs meter_id and value")
 				return
 			}
-			if _, dup := values[rd.MeterID]; dup {
-				writeError(w, http.StatusBadRequest, "a meter appears twice in one round")
+			zone := strings.ToLower(strings.TrimSpace(rd.Zone))
+			if zone == "" {
+				zone = utility.ZoneSingle
+			}
+			if values[rd.MeterID] == nil {
+				values[rd.MeterID] = map[string]decimal.Decimal{}
+			}
+			if _, dup := values[rd.MeterID][zone]; dup {
+				writeError(w, http.StatusBadRequest, "a meter register appears twice in one round")
 				return
 			}
-			values[rd.MeterID] = *rd.Value
+			values[rd.MeterID][zone] = *rd.Value
 		}
 
 		created, err := s.utilities.CreateReadings(r.Context(), takenOn, values)

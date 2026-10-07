@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	ZonesSingle   = "single"
-	ZonesDayNight = "day_night"
+	RegistersSingle   = "single"
+	RegistersDayNight = "day_night"
 )
 
 const (
@@ -37,7 +37,6 @@ type Account struct {
 	AddressID         uuid.UUID  `json:"address_id"`
 	Service           string     `json:"service"`
 	Number            string     `json:"number"`
-	Zones             string     `json:"zones"`
 	ExpenseCategoryID *uuid.UUID `json:"expense_category_id"`
 	IsActive          bool       `json:"is_active"`
 	CreatedAt         time.Time  `json:"created_at"`
@@ -48,6 +47,7 @@ type Meter struct {
 	ID          uuid.UUID  `json:"id"`
 	AccountID   uuid.UUID  `json:"account_id"`
 	Serial      string     `json:"serial"`
+	Registers   string     `json:"registers"`
 	InstalledOn time.Time  `json:"installed_on"`
 	RemovedOn   *time.Time `json:"removed_on"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -57,6 +57,7 @@ type Meter struct {
 type Reading struct {
 	ID        uuid.UUID       `json:"id"`
 	MeterID   uuid.UUID       `json:"meter_id"`
+	Zone      string          `json:"zone"`
 	TakenOn   time.Time       `json:"taken_on"`
 	Value     decimal.Decimal `json:"value"`
 	IsInitial bool            `json:"is_initial"`
@@ -64,10 +65,9 @@ type Reading struct {
 	UpdatedAt time.Time       `json:"updated_at"`
 }
 
-type ZoneUsage struct {
-	AccountID uuid.UUID       `json:"account_id"`
-	Month     time.Time       `json:"month"`
-	Zone      string          `json:"zone"`
-	Quantity  decimal.Decimal `json:"quantity"`
-	UpdatedAt time.Time       `json:"updated_at"`
+func ZonesOf(registers string) []string {
+	if registers == RegistersDayNight {
+		return []string{ZoneDay, ZoneNight}
+	}
+	return []string{ZoneSingle}
 }

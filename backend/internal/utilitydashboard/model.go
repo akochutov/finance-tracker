@@ -2,6 +2,11 @@ package utilitydashboard
 
 import "github.com/shopspring/decimal"
 
+const (
+	KindMeter = "meter"
+	KindZone  = "zone"
+)
+
 type Dashboard struct {
 	Currency string         `json:"currency"`
 	Period   Period         `json:"period"`
@@ -45,18 +50,12 @@ type Series struct {
 	Key         string             `json:"key"`
 	Label       string             `json:"label"`
 	Kind        string             `json:"kind"`
+	Zone        string             `json:"zone"`
 	Consumption []*decimal.Decimal `json:"consumption"`
 	Cost        []*decimal.Decimal `json:"cost"`
 }
 
 type Coverage struct {
 	MissingTariffs []string `json:"missing_tariffs"`
-	MissingSplits  []string `json:"missing_splits"`
 	MissingRates   []string `json:"missing_rates"`
 }
-
-const (
-	KindMeter   = "meter"
-	KindZone    = "zone"
-	KindUnsplit = "unsplit"
-)

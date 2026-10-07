@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const meterColumns = "id, account_id, serial, installed_on, removed_on, created_at, updated_at"
+const meterColumns = "id, account_id, serial, registers, installed_on, removed_on, created_at, updated_at"
 
 type MeterRepository struct {
 	db *pgxpool.Pool
@@ -22,7 +22,7 @@ func NewMeterRepository(db *pgxpool.Pool) *MeterRepository {
 	return &MeterRepository{db: db}
 }
 
-func (r *MeterRepository) Create(ctx context.Context, meter Meter, initial Reading) (Meter, error) {
+func (r *MeterRepository) Create(ctx context.Context, meter Meter, initial []Reading) (Meter, error) {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return Meter{}, fmt.Errorf("begin tx: %w", err)
@@ -30,13 +30,13 @@ func (r *MeterRepository) Create(ctx context.Context, meter Meter, initial Readi
 	defer tx.Rollback(ctx)
 
 	const q = `
-		INSERT INTO meters (id, account_id, serial, installed_on, removed_on)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO meters (id, account_id, serial, registers, installed_on, removed_on)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING ` + meterColumns
 
 	var out Meter
 	err = scanMeter(tx.QueryRow(ctx, q,
-		meter.ID, meter.AccountID, meter.Serial, meter.InstalledOn, meter.RemovedOn,
+		meter.ID, meter.AccountID, meter.Serial, meter.Registers, meter.InstalledOn, meter.RemovedOn,
 	), &out)
 	if err != nil {
 		if mapped := meterWriteError(err); mapped != nil {
@@ -45,9 +45,11 @@ func (r *MeterRepository) Create(ctx context.Context, meter Meter, initial Readi
 		return Meter{}, fmt.Errorf("insert meter: %w", err)
 	}
 
-	initial.MeterID = out.ID
-	if _, err := insertReading(ctx, tx, initial); err != nil {
-		return Meter{}, err
+	for _, rd := range initial {
+		rd.MeterID = out.ID
+		if _, err := insertReading(ctx, tx, rd); err != nil {
+			return Meter{}, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -141,10 +143,12 @@ func meterWriteError(err error) error {
 		return ErrAccountNotFound
 	case "chk_meters_dates":
 		return fmt.Errorf("%w: removed before installed", ErrInvalidInput)
+	case "meters_registers_check":
+		return fmt.Errorf("%w: unknown registers", ErrInvalidInput)
 	}
 	return nil
 }
 
 func scanMeter(row pgx.Row, m *Meter) error {
-	return row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.InstalledOn, &m.RemovedOn, &m.CreatedAt, &m.UpdatedAt)
+	return row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Registers, &m.InstalledOn, &m.RemovedOn, &m.CreatedAt, &m.UpdatedAt)
 }

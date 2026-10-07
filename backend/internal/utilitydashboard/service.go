@@ -35,6 +35,17 @@ func NewService(repo *Repository, tariffs *tariff.Service, rates *exchangerate.S
 	return &Service{repo: repo, tariffs: tariffs, rates: rates, settings: settings}
 }
 
+type registerKey struct {
+	meter uuid.UUID
+	zone  string
+}
+
+type seriesData struct {
+	key, label, kind, zone string
+	consumption            []*decimal.Decimal
+	cost                   []*decimal.Decimal
+}
+
 func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error) {
 	from, to = firstOfMonth(from), firstOfMonth(to)
 	if to.Before(from) {
@@ -59,6 +70,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 		index[m.Format(monthLayout)] = i
 	}
 	within := func(i int, a, b time.Time) bool { return !months[i].Before(a) && !months[i].After(b) }
+	inPeriod := func(i int) bool { return within(i, from, to) }
 
 	set, err := s.settings.Get(ctx)
 	if err != nil {
@@ -82,11 +94,6 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	if err != nil {
 		return Dashboard{}, err
 	}
-	end := to.AddDate(0, 1, 0)
-	usageRows, err := s.repo.ZoneUsage(ctx, start, end)
-	if err != nil {
-		return Dashboard{}, err
-	}
 	var categories []uuid.UUID
 	seenCategory := map[uuid.UUID]bool{}
 	for _, a := range accounts {
@@ -95,7 +102,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 			categories = append(categories, *a.ExpenseCategoryID)
 		}
 	}
-	payments, err := s.repo.Payments(ctx, categories, start, end)
+	payments, err := s.repo.Payments(ctx, categories, start, to.AddDate(0, 1, 0))
 	if err != nil {
 		return Dashboard{}, err
 	}
@@ -104,17 +111,18 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	conv := newConverter(s.rates, base, cov)
 	prices := newPriceBook(s.tariffs)
 
-	perMeter := map[uuid.UUID][]*decimal.Decimal{}
+	perRegister := map[registerKey][]*decimal.Decimal{}
 	var prev *ReadingRow
 	for i := range readings {
 		rd := &readings[i]
-		if prev != nil && prev.MeterID == rd.MeterID {
+		if prev != nil && prev.MeterID == rd.MeterID && prev.Zone == rd.Zone {
 			month := firstOfMonth(rd.TakenOn).AddDate(0, -1, 0)
 			if k, ok := index[month.Format(monthLayout)]; ok {
-				if perMeter[rd.MeterID] == nil {
-					perMeter[rd.MeterID] = make([]*decimal.Decimal, len(months))
+				key := registerKey{rd.MeterID, rd.Zone}
+				if perRegister[key] == nil {
+					perRegister[key] = make([]*decimal.Decimal, len(months))
 				}
-				addTo(perMeter[rd.MeterID], k, rd.Value.Sub(prev.Value))
+				addTo(perRegister[key], k, rd.Value.Sub(prev.Value))
 			}
 		}
 		prev = rd
@@ -124,32 +132,19 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	for _, m := range meters {
 		metersOf[m.AccountID] = append(metersOf[m.AccountID], m)
 	}
-	perAccount := map[uuid.UUID][]*decimal.Decimal{}
+	accountVolume := map[uuid.UUID][]*decimal.Decimal{}
 	for _, a := range accounts {
 		vol := make([]*decimal.Decimal, len(months))
 		for _, m := range metersOf[a.ID] {
-			for k, v := range perMeter[m.ID] {
-				if v != nil {
-					addTo(vol, k, *v)
+			for _, z := range utility.ZonesOf(m.Registers) {
+				for k, v := range perRegister[registerKey{m.ID, z}] {
+					if v != nil {
+						addTo(vol, k, *v)
+					}
 				}
 			}
 		}
-		perAccount[a.ID] = vol
-	}
-
-	split := map[uuid.UUID]map[int]map[string]decimal.Decimal{}
-	for _, u := range usageRows {
-		k, ok := index[u.Month.Format(monthLayout)]
-		if !ok {
-			continue
-		}
-		if split[u.AccountID] == nil {
-			split[u.AccountID] = map[int]map[string]decimal.Decimal{}
-		}
-		if split[u.AccountID][k] == nil {
-			split[u.AccountID][k] = map[string]decimal.Decimal{}
-		}
-		split[u.AccountID][k][u.Zone] = u.Quantity
+		accountVolume[a.ID] = vol
 	}
 
 	paidBy := map[uuid.UUID][]decimal.Decimal{}
@@ -174,9 +169,11 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	blocks := make([]ServiceBlock, 0)
 	for _, svc := range services {
 		var accs []AccountRow
+		meterCount := 0
 		for _, a := range accounts {
 			if a.Service == svc.Code {
 				accs = append(accs, a)
+				meterCount += len(metersOf[a.ID])
 			}
 		}
 		if len(accs) == 0 {
@@ -186,21 +183,18 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 		var series []seriesData
 		dayNight := false
 		for _, a := range accs {
-			if a.Zones == utility.ZonesDayNight {
-				dayNight = true
-				zs, err := s.zoneSeries(ctx, svc, a, len(accs) > 1, months, perAccount[a.ID], split[a.ID], prices, conv, cov, func(i int) bool { return within(i, from, to) })
-				if err != nil {
-					return Dashboard{}, err
-				}
-				series = append(series, zs...)
-				continue
-			}
 			for _, m := range metersOf[a.ID] {
-				ms, err := s.meterSeries(ctx, svc, a, m, months, perMeter[m.ID], perAccount[a.ID], prices, conv, cov, func(i int) bool { return within(i, from, to) })
-				if err != nil {
-					return Dashboard{}, err
+				for _, z := range utility.ZonesOf(m.Registers) {
+					if z != utility.ZoneSingle {
+						dayNight = true
+					}
+					sr, err := s.registerSeries(ctx, svc, m, z, meterCount > 1, months,
+						perRegister[registerKey{m.ID, z}], accountVolume[a.ID], prices, conv, cov, inPeriod)
+					if err != nil {
+						return Dashboard{}, err
+					}
+					series = append(series, sr)
 				}
-				series = append(series, ms)
 			}
 		}
 
@@ -287,6 +281,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 				Key:         sr.key,
 				Label:       sr.label,
 				Kind:        sr.kind,
+				Zone:        sr.zone,
 				Consumption: sr.consumption[first:],
 				Cost:        sr.cost[first:],
 			})
@@ -309,94 +304,56 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	}, nil
 }
 
-type seriesData struct {
-	key, label, kind, zone string
-	consumption            []*decimal.Decimal
-	cost                   []*decimal.Decimal
-}
-
-func (s *Service) meterSeries(ctx context.Context, svc ServiceRow, a AccountRow, m MeterRow, months []time.Time,
+func (s *Service) registerSeries(ctx context.Context, svc ServiceRow, m MeterRow, zone string, withSerial bool, months []time.Time,
 	consumption, accountVolume []*decimal.Decimal, prices *priceBook, conv *converter, cov *coverage, inPeriod func(int) bool) (seriesData, error) {
 
 	sr := seriesData{
-		key:         m.ID.String(),
-		label:       m.Serial,
+		key:         m.ID.String() + ":" + zone,
+		label:       registerLabel(m.Serial, zone, withSerial),
 		kind:        KindMeter,
+		zone:        zone,
 		consumption: make([]*decimal.Decimal, len(months)),
 		cost:        make([]*decimal.Decimal, len(months)),
 	}
+	if zone != utility.ZoneSingle {
+		sr.kind = KindZone
+	}
+
 	for k, month := range months {
 		if consumption == nil || consumption[k] == nil {
 			continue
 		}
 		sr.consumption[k] = consumption[k]
-		cost, err := s.price(ctx, prices, conv, svc.Code, utility.ZoneSingle, month, *accountVolume[k], *consumption[k])
+		cost, err := s.price(ctx, prices, conv, svc.Code, zone, month, *accountVolume[k], *consumption[k])
 		if err != nil {
 			return seriesData{}, err
 		}
 		sr.cost[k] = cost
 		if cost == nil && inPeriod(k) {
-			cov.missingTariff(month, svc.Code)
+			what := svc.Code
+			if zone != utility.ZoneSingle {
+				what += " " + zone
+			}
+			cov.missingTariff(month, what)
 		}
 	}
 	return sr, nil
 }
 
-func (s *Service) zoneSeries(ctx context.Context, svc ServiceRow, a AccountRow, withNumber bool, months []time.Time,
-	accountVolume []*decimal.Decimal, splits map[int]map[string]decimal.Decimal,
-	prices *priceBook, conv *converter, cov *coverage, inPeriod func(int) bool) ([]seriesData, error) {
-
-	suffix := ""
-	if withNumber {
-		suffix = " · " + a.Number
-	}
-	newSeries := func(zone, label, kind string) seriesData {
-		return seriesData{
-			key:         a.ID.String() + ":" + zone,
-			label:       label + suffix,
-			kind:        kind,
-			zone:        zone,
-			consumption: make([]*decimal.Decimal, len(months)),
-			cost:        make([]*decimal.Decimal, len(months)),
+func registerLabel(serial, zone string, withSerial bool) string {
+	switch zone {
+	case utility.ZoneDay, utility.ZoneNight:
+		label := "Day"
+		if zone == utility.ZoneNight {
+			label = "Night"
 		}
-	}
-	day := newSeries(utility.ZoneDay, "Day", KindZone)
-	night := newSeries(utility.ZoneNight, "Night", KindZone)
-	unsplit := newSeries("unsplit", "Unsplit", KindUnsplit)
-	hasUnsplit := false
-
-	for k, month := range months {
-		sp, ok := splits[k]
-		if ok && hasBoth(sp) {
-			total := sp[utility.ZoneDay].Add(sp[utility.ZoneNight])
-			for _, z := range []*seriesData{&day, &night} {
-				q := sp[z.zone]
-				z.consumption[k] = &q
-				cost, err := s.price(ctx, prices, conv, svc.Code, z.zone, month, total, q)
-				if err != nil {
-					return nil, err
-				}
-				z.cost[k] = cost
-				if cost == nil && inPeriod(k) {
-					cov.missingTariff(month, svc.Code+" "+z.zone)
-				}
-			}
-			continue
+		if withSerial {
+			label += " · " + serial
 		}
-		if accountVolume[k] != nil {
-			unsplit.consumption[k] = accountVolume[k]
-			hasUnsplit = true
-			if inPeriod(k) {
-				cov.missingSplit(month, a.Number)
-			}
-		}
+		return label
+	default:
+		return serial
 	}
-
-	out := []seriesData{day, night}
-	if hasUnsplit {
-		out = append(out, unsplit)
-	}
-	return out, nil
 }
 
 func (s *Service) price(ctx context.Context, prices *priceBook, conv *converter, service, zone string, month time.Time, volume, priced decimal.Decimal) (*decimal.Decimal, error) {
@@ -475,19 +432,15 @@ func (c *converter) convert(ctx context.Context, amount decimal.Decimal, currenc
 }
 
 type coverage struct {
-	tariffs, splits, rates map[string]bool
+	tariffs, rates map[string]bool
 }
 
 func newCoverage() *coverage {
-	return &coverage{tariffs: map[string]bool{}, splits: map[string]bool{}, rates: map[string]bool{}}
+	return &coverage{tariffs: map[string]bool{}, rates: map[string]bool{}}
 }
 
 func (c *coverage) missingTariff(month time.Time, what string) {
 	c.tariffs[month.Format(monthLayout)+" "+what] = true
-}
-
-func (c *coverage) missingSplit(month time.Time, account string) {
-	c.splits[month.Format(monthLayout)+" "+account] = true
 }
 
 func (c *coverage) missingRate(day time.Time, currency string) {
@@ -497,7 +450,6 @@ func (c *coverage) missingRate(day time.Time, currency string) {
 func (c *coverage) result() Coverage {
 	return Coverage{
 		MissingTariffs: sortedKeys(c.tariffs),
-		MissingSplits:  sortedKeys(c.splits),
 		MissingRates:   sortedKeys(c.rates),
 	}
 }
@@ -509,12 +461,6 @@ func addTo(values []*decimal.Decimal, k int, v decimal.Decimal) {
 	}
 	sum := values[k].Add(v)
 	values[k] = &sum
-}
-
-func hasBoth(sp map[string]decimal.Decimal) bool {
-	_, d := sp[utility.ZoneDay]
-	_, n := sp[utility.ZoneNight]
-	return d && n
 }
 
 func sortedKeys(m map[string]bool) []string {

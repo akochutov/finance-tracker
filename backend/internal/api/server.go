@@ -157,10 +157,6 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("DELETE /api/utility-accounts/{id}", s.handleDeactivateUtilityAccount())
 	s.mux.HandleFunc("POST /api/utility-accounts/{id}/activate", s.handleActivateUtilityAccount())
 
-	s.mux.HandleFunc("GET /api/utility-accounts/{id}/zone-usage", s.handleListZoneUsage())
-	s.mux.HandleFunc("PUT /api/utility-accounts/{id}/zone-usage", s.handleSetZoneUsage())
-	s.mux.HandleFunc("DELETE /api/utility-accounts/{id}/zone-usage/{month}", s.handleDeleteZoneUsage())
-
 	s.mux.HandleFunc("GET /api/meters", s.handleListMeters())
 	s.mux.HandleFunc("POST /api/meters", s.handleCreateMeter())
 	s.mux.HandleFunc("PUT /api/meters/{id}", s.handleUpdateMeter())
