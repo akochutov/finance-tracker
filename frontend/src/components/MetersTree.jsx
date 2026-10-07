@@ -2,7 +2,35 @@ import { useState } from "react";
 import { formatISODate, todayISO } from "./expenseUtils";
 import { isDayNight, ZONES_SINGLE, ZONES_DAY_NIGHT } from "./meterUtils";
 
-function MetersTree({ addresses, accounts, meters, serviceTypes, selectedId, onSelect, actions }) {
+function PaymentCategorySelect({ groups, value, onChange }) {
+    return (
+        <select className="input" value={value || ""} onChange={(e) => onChange(e.target.value)}>
+            <option value="">Payments: not tracked</option>
+            {groups.map((g) => {
+                const cats = (g.categories || []).filter((c) => c.is_active || c.id === value);
+                if (cats.length === 0) return null;
+                return (
+                    <optgroup key={g.id} label={g.name}>
+                        {cats.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </optgroup>
+                );
+            })}
+        </select>
+    );
+}
+
+function categoryName(groups, id) {
+    if (!id) return null;
+    for (const g of groups) {
+        const c = (g.categories || []).find((x) => x.id === id);
+        if (c) return `${g.name} → ${c.name}`;
+    }
+    return null;
+}
+
+function MetersTree({ addresses, accounts, meters, serviceTypes, groups, selectedId, onSelect, actions }) {
     const [newAddress, setNewAddress] = useState("");
 
     async function addAddress(e) {
@@ -31,6 +59,7 @@ function MetersTree({ addresses, accounts, meters, serviceTypes, selectedId, onS
                     accounts={accounts.filter((acc) => acc.address_id === a.id)}
                     meters={meters}
                     serviceTypes={serviceTypes}
+                    groups={groups}
                     selectedId={selectedId}
                     onSelect={onSelect}
                     actions={actions}
@@ -41,13 +70,14 @@ function MetersTree({ addresses, accounts, meters, serviceTypes, selectedId, onS
     );
 }
 
-function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSelect, actions }) {
+function AddressNode({ address, accounts, meters, serviceTypes, groups, selectedId, onSelect, actions }) {
     const [expanded, setExpanded] = useState(address.is_active);
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(address.address);
     const [service, setService] = useState(serviceTypes[0]?.code || "");
     const [number, setNumber] = useState("");
     const [zones, setZones] = useState(ZONES_SINGLE);
+    const [categoryId, setCategoryId] = useState("");
 
     const meterCount = meters.filter((m) => accounts.some((acc) => acc.id === m.account_id)).length;
 
@@ -58,9 +88,10 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
 
     async function addAccount(e) {
         e.preventDefault();
-        if (await actions.createAccount(address.id, service, number, zones)) {
+        if (await actions.createAccount(address.id, service, number, zones, categoryId)) {
             setNumber("");
             setZones(ZONES_SINGLE);
+            setCategoryId("");
         }
     }
 
@@ -104,6 +135,7 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
                             key={acc.id}
                             account={acc}
                             serviceType={serviceTypes.find((t) => t.code === acc.service)}
+                            groups={groups}
                             meters={meters.filter((m) => m.account_id === acc.id)}
                             selectedId={selectedId}
                             onSelect={onSelect}
@@ -129,6 +161,7 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
                                 <option value={ZONES_SINGLE}>Single zone</option>
                                 <option value={ZONES_DAY_NIGHT}>Day / night</option>
                             </select>
+                            <PaymentCategorySelect groups={groups} value={categoryId} onChange={setCategoryId} />
                             <button type="submit" className="btn btn-secondary btn-sm">+ Account</button>
                         </form>
                     )}
@@ -138,19 +171,28 @@ function AddressNode({ address, accounts, meters, serviceTypes, selectedId, onSe
     );
 }
 
-function AccountNode({ account, serviceType, meters, selectedId, onSelect, actions }) {
+function AccountNode({ account, serviceType, groups, meters, selectedId, onSelect, actions }) {
     const [editing, setEditing] = useState(false);
     const [number, setNumber] = useState(account.number);
+    const [categoryId, setCategoryId] = useState(account.expense_category_id || "");
     const [adding, setAdding] = useState(false);
     const [serial, setSerial] = useState("");
     const [installedOn, setInstalledOn] = useState(todayISO());
     const [initialValue, setInitialValue] = useState("");
     const [initialOn, setInitialOn] = useState("");
 
-    async function saveNumber(e) {
+    async function saveAccount(e) {
         e.preventDefault();
-        if (await actions.updateAccount(account.id, number)) setEditing(false);
+        if (await actions.updateAccount(account.id, number, categoryId)) setEditing(false);
     }
+
+    function startEdit() {
+        setNumber(account.number);
+        setCategoryId(account.expense_category_id || "");
+        setEditing(true);
+    }
+
+    const category = categoryName(groups, account.expense_category_id);
 
     async function addMeter(e) {
         e.preventDefault();
@@ -173,8 +215,9 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
     return (
         <div className={account.is_active ? "mt-account" : "mt-account inactive"}>
             {editing ? (
-                <form className="mt-inline-form" onSubmit={saveNumber}>
+                <form className="mt-inline-form mt-subform" onSubmit={saveAccount}>
                     <input className="input" value={number} onChange={(e) => setNumber(e.target.value)} />
+                    <PaymentCategorySelect groups={groups} value={categoryId} onChange={setCategoryId} />
                     <button type="submit" className="btn btn-primary btn-sm">Save</button>
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>
                 </form>
@@ -192,13 +235,19 @@ function AccountNode({ account, serviceType, meters, selectedId, onSelect, actio
                         {account.is_active ? (
                             <>
                                 <button type="button" className="mt-link" onClick={() => setAdding(!adding)}>+ meter</button>
-                                <button type="button" className="mt-link" onClick={() => { setNumber(account.number); setEditing(true); }}>edit</button>
+                                <button type="button" className="mt-link" onClick={startEdit}>edit</button>
                                 <button type="button" className="mt-link mt-link-danger" onClick={() => actions.setAccountActive(account.id, false)}>deactivate</button>
                             </>
                         ) : (
                             <button type="button" className="mt-link" onClick={() => actions.setAccountActive(account.id, true)}>activate</button>
                         )}
                     </span>
+                </div>
+            )}
+
+            {!editing && (
+                <div className="mt-category">
+                    {category ? `→ ${category}` : "payments not tracked"}
                 </div>
             )}
 

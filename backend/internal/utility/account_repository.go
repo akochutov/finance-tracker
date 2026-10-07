@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const accountColumns = "id, address_id, service, number, zones, is_active, created_at, updated_at"
+const accountColumns = "id, address_id, service, number, zones, expense_category_id, is_active, created_at, updated_at"
 
 type AccountRepository struct {
 	db *pgxpool.Pool
@@ -23,27 +23,18 @@ func NewAccountRepository(db *pgxpool.Pool) *AccountRepository {
 
 func (r *AccountRepository) Create(ctx context.Context, account Account) (Account, error) {
 	const q = `
-		INSERT INTO accounts (id, address_id, service, number, zones, is_active)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO accounts (id, address_id, service, number, zones, expense_category_id, is_active)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING ` + accountColumns
 
 	var out Account
 	err := scanAccount(r.db.QueryRow(ctx, q,
-		account.ID, account.AddressID, account.Service, account.Number, account.Zones, account.IsActive,
+		account.ID, account.AddressID, account.Service, account.Number,
+		account.Zones, account.ExpenseCategoryID, account.IsActive,
 	), &out)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			switch {
-			case pgErr.Code == uniqueViolation:
-				return Account{}, ErrAccountTaken
-			case pgErr.ConstraintName == "accounts_address_id_fkey":
-				return Account{}, ErrAddressNotFound
-			case pgErr.ConstraintName == "accounts_service_fkey":
-				return Account{}, fmt.Errorf("%w: unknown service", ErrInvalidInput)
-			case pgErr.ConstraintName == "accounts_zones_check":
-				return Account{}, fmt.Errorf("%w: unknown tariff zones", ErrInvalidInput)
-			}
+		if mapped := accountWriteError(err); mapped != nil {
+			return Account{}, mapped
 		}
 		return Account{}, fmt.Errorf("insert account: %w", err)
 	}
@@ -89,21 +80,20 @@ func (r *AccountRepository) List(ctx context.Context) ([]Account, error) {
 	return accounts, nil
 }
 
-func (r *AccountRepository) Update(ctx context.Context, id uuid.UUID, number string) (Account, error) {
+func (r *AccountRepository) Update(ctx context.Context, id uuid.UUID, number string, categoryID *uuid.UUID) (Account, error) {
 	const q = `
-		UPDATE accounts SET number = $1
-		WHERE id = $2
+		UPDATE accounts SET number = $1, expense_category_id = $2
+		WHERE id = $3
 		RETURNING ` + accountColumns
 
 	var out Account
-	err := scanAccount(r.db.QueryRow(ctx, q, number, id), &out)
+	err := scanAccount(r.db.QueryRow(ctx, q, number, categoryID, id), &out)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
-			return Account{}, ErrAccountTaken
-		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Account{}, ErrAccountNotFound
+		}
+		if mapped := accountWriteError(err); mapped != nil {
+			return Account{}, mapped
 		}
 		return Account{}, fmt.Errorf("update account: %w", err)
 	}
@@ -125,6 +115,29 @@ func (r *AccountRepository) SetActive(ctx context.Context, id uuid.UUID, active 
 	return nil
 }
 
+func accountWriteError(err error) error {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return nil
+	}
+	switch pgErr.ConstraintName {
+	case "uq_accounts_address_service_number":
+		return ErrAccountTaken
+	case "accounts_address_id_fkey":
+		return ErrAddressNotFound
+	case "accounts_service_fkey":
+		return fmt.Errorf("%w: unknown service", ErrInvalidInput)
+	case "accounts_zones_check":
+		return fmt.Errorf("%w: unknown tariff zones", ErrInvalidInput)
+	case "accounts_expense_category_id_fkey":
+		return fmt.Errorf("%w: unknown expense category", ErrInvalidInput)
+	}
+	return nil
+}
+
 func scanAccount(row pgx.Row, a *Account) error {
-	return row.Scan(&a.ID, &a.AddressID, &a.Service, &a.Number, &a.Zones, &a.IsActive, &a.CreatedAt, &a.UpdatedAt)
+	return row.Scan(
+		&a.ID, &a.AddressID, &a.Service, &a.Number, &a.Zones,
+		&a.ExpenseCategoryID, &a.IsActive, &a.CreatedAt, &a.UpdatedAt,
+	)
 }

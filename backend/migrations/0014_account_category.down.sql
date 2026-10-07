@@ -1,0 +1,1 @@
+ALTER TABLE accounts DROP COLUMN IF EXISTS expense_category_id;

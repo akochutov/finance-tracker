@@ -15,6 +15,7 @@ import (
 	"github.com/akochutov/finance-tracker/internal/settings"
 	"github.com/akochutov/finance-tracker/internal/tariff"
 	"github.com/akochutov/finance-tracker/internal/utility"
+	"github.com/akochutov/finance-tracker/internal/utilitydashboard"
 )
 
 type Services struct {
@@ -28,10 +29,11 @@ type Services struct {
 	RateSource       *ratesource.Service
 	RateFetch        *ratefetch.Service
 	IncomeDashboard  *incomedashboard.Service
-	ExpenseDashboard *expensedashboard.Service
 	Backfiller       *ratefetch.Backfiller
 	ExpenseCategory  *expensecategory.Service
 	Expense          *expense.Service
+	ExpenseDashboard *expensedashboard.Service
 	Utility          *utility.Service
 	Tariff           *tariff.Service
+	UtilityDashboard *utilitydashboard.Service
 }

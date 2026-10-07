@@ -41,13 +41,9 @@ func NewService(
 	}
 }
 
-// --- Service types ---
-
 func (s *Service) ListServiceTypes(ctx context.Context) ([]ServiceType, error) {
 	return s.serviceTypes.List(ctx)
 }
-
-// --- Addresses ---
 
 func (s *Service) CreateAddress(ctx context.Context, address string) (Address, error) {
 	address = strings.TrimSpace(address)
@@ -90,9 +86,7 @@ func (s *Service) SetAddressActive(ctx context.Context, id uuid.UUID, active boo
 	return s.addresses.SetActive(ctx, id, active)
 }
 
-// --- Accounts ---
-
-func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, service, number, zones string) (Account, error) {
+func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, service, number, zones string, categoryID *uuid.UUID) (Account, error) {
 	service = strings.ToLower(strings.TrimSpace(service))
 	number = strings.TrimSpace(number)
 	zones = strings.ToLower(strings.TrimSpace(zones))
@@ -123,12 +117,13 @@ func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, servic
 	}
 
 	return s.accounts.Create(ctx, Account{
-		ID:        id,
-		AddressID: addressID,
-		Service:   service,
-		Number:    number,
-		Zones:     zones,
-		IsActive:  true,
+		ID:                id,
+		AddressID:         addressID,
+		Service:           service,
+		Number:            number,
+		Zones:             zones,
+		ExpenseCategoryID: categoryID,
+		IsActive:          true,
 	})
 }
 
@@ -136,12 +131,12 @@ func (s *Service) ListAccounts(ctx context.Context) ([]Account, error) {
 	return s.accounts.List(ctx)
 }
 
-func (s *Service) UpdateAccount(ctx context.Context, id uuid.UUID, number string) (Account, error) {
+func (s *Service) UpdateAccount(ctx context.Context, id uuid.UUID, number string, categoryID *uuid.UUID) (Account, error) {
 	number = strings.TrimSpace(number)
 	if number == "" {
 		return Account{}, fmt.Errorf("%w: account number is required", ErrInvalidInput)
 	}
-	return s.accounts.Update(ctx, id, number)
+	return s.accounts.Update(ctx, id, number, categoryID)
 }
 
 func (s *Service) SetAccountActive(ctx context.Context, id uuid.UUID, active bool) error {
@@ -160,8 +155,6 @@ func (s *Service) SetAccountActive(ctx context.Context, id uuid.UUID, active boo
 	}
 	return s.accounts.SetActive(ctx, id, active)
 }
-
-// --- Meters ---
 
 func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial string, installedOn time.Time, removedOn *time.Time, initialOn time.Time, initialValue *decimal.Decimal) (Meter, error) {
 	serial = strings.TrimSpace(serial)
@@ -238,8 +231,6 @@ func (s *Service) UpdateMeter(ctx context.Context, id uuid.UUID, serial string, 
 func (s *Service) DeleteMeter(ctx context.Context, id uuid.UUID) error {
 	return s.meters.Delete(ctx, id)
 }
-
-// --- Readings ---
 
 func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values map[uuid.UUID]decimal.Decimal) ([]Reading, error) {
 	if takenOn.IsZero() {
@@ -358,8 +349,6 @@ func (s *Service) checkMonotonic(ctx context.Context, meter Meter, day time.Time
 	return nil
 }
 
-// --- Provider's split by zone ---
-
 func (s *Service) SetZoneUsage(ctx context.Context, accountID uuid.UUID, month time.Time, values map[string]decimal.Decimal) ([]ZoneUsage, error) {
 	if month.IsZero() {
 		return nil, fmt.Errorf("%w: month is required", ErrInvalidInput)
@@ -407,8 +396,6 @@ func (s *Service) DeleteZoneUsage(ctx context.Context, accountID uuid.UUID, mont
 	}
 	return s.zoneUsage.DeleteMonth(ctx, accountID, firstOfMonth(month))
 }
-
-// --- Helpers ---
 
 func normalizeMeter(serial string, installedOn time.Time, removedOn *time.Time) (time.Time, *time.Time, error) {
 	if serial == "" {

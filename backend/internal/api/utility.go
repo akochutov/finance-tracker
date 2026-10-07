@@ -14,8 +14,6 @@ import (
 
 const monthLayout = "2006-01"
 
-// --- DTOs ---
-
 type listServiceTypesResponse struct {
 	ServiceTypes []utility.ServiceType `json:"service_types"`
 }
@@ -45,14 +43,16 @@ type addressRequest struct {
 }
 
 type createUtilityAccountRequest struct {
-	AddressID uuid.UUID `json:"address_id"`
-	Service   string    `json:"service"`
-	Number    string    `json:"number"`
-	Zones     string    `json:"zones"`
+	AddressID         uuid.UUID  `json:"address_id"`
+	Service           string     `json:"service"`
+	Number            string     `json:"number"`
+	Zones             string     `json:"zones"`
+	ExpenseCategoryID *uuid.UUID `json:"expense_category_id"`
 }
 
 type updateUtilityAccountRequest struct {
-	Number string `json:"number"`
+	Number            string     `json:"number"`
+	ExpenseCategoryID *uuid.UUID `json:"expense_category_id"`
 }
 
 type createMeterRequest struct {
@@ -87,8 +87,6 @@ type setZoneUsageRequest struct {
 	Month  string                     `json:"month"`
 	Values map[string]decimal.Decimal `json:"values"`
 }
-
-// --- Helpers ---
 
 func pathUUID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, bool) {
 	id, err := uuid.Parse(r.PathValue(name))
@@ -141,8 +139,6 @@ func writeUtilityError(w http.ResponseWriter, err error, op string) {
 	}
 }
 
-// --- Service types ---
-
 func (s *Server) handleListServiceTypes() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.utilities.ListServiceTypes(r.Context())
@@ -153,8 +149,6 @@ func (s *Server) handleListServiceTypes() http.HandlerFunc {
 		writeJSON(w, http.StatusOK, listServiceTypesResponse{ServiceTypes: list})
 	}
 }
-
-// --- Addresses ---
 
 func (s *Server) handleListAddresses() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -234,8 +228,6 @@ func (s *Server) handleActivateAddress() http.HandlerFunc {
 	}
 }
 
-// --- Utility accounts ---
-
 func (s *Server) handleListUtilityAccounts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		list, err := s.utilities.ListAccounts(r.Context())
@@ -259,7 +251,7 @@ func (s *Server) handleCreateUtilityAccount() http.HandlerFunc {
 			return
 		}
 
-		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number, req.Zones)
+		created, err := s.utilities.CreateAccount(r.Context(), req.AddressID, req.Service, req.Number, req.Zones, req.ExpenseCategoryID)
 		if err != nil {
 			writeUtilityError(w, err, "create utility account")
 			return
@@ -281,7 +273,7 @@ func (s *Server) handleUpdateUtilityAccount() http.HandlerFunc {
 			return
 		}
 
-		updated, err := s.utilities.UpdateAccount(r.Context(), id, req.Number)
+		updated, err := s.utilities.UpdateAccount(r.Context(), id, req.Number, req.ExpenseCategoryID)
 		if err != nil {
 			writeUtilityError(w, err, "update utility account")
 			return
@@ -317,8 +309,6 @@ func (s *Server) handleActivateUtilityAccount() http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
-
-// --- Provider's split by zone ---
 
 func (s *Server) handleListZoneUsage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -382,8 +372,6 @@ func (s *Server) handleDeleteZoneUsage() http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
-
-// --- Meters ---
 
 func (s *Server) handleListMeters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -481,8 +469,6 @@ func (s *Server) handleDeleteMeter() http.HandlerFunc {
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
-
-// --- Readings ---
 
 func (s *Server) handleCreateReadings() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
