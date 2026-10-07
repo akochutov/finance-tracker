@@ -214,6 +214,14 @@ export async function getExpenseDashboard(from, to) {
     return request(`/api/dashboard/expenses?${params}`);
 }
 
+// --- Utilities dashboard ---
+
+// from, to: billing months "YYYY-MM", both included.
+export async function getUtilityDashboard(from, to) {
+    const params = new URLSearchParams({ from, to });
+    return request(`/api/dashboard/utilities?${params}`);
+}
+
 // --- Expense groups & categories ---
 
 export async function getExpenseGroups() {
@@ -355,7 +363,7 @@ export async function getUtilityAccounts() {
     return data.accounts;
 }
 
-// account: { address_id, service, number, zones: "single" | "day_night" }
+// account: { address_id, service, number, zones: "single" | "day_night", expense_category_id }
 export async function createUtilityAccount(account) {
     return request("/api/utility-accounts", {
         method: "POST",
@@ -363,10 +371,11 @@ export async function createUtilityAccount(account) {
     });
 }
 
-export async function updateUtilityAccount(id, number) {
+// Both fields are always sent: a missing category would clear it.
+export async function updateUtilityAccount(id, number, expenseCategoryId) {
     return request(`/api/utility-accounts/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ number }),
+        body: JSON.stringify({ number, expense_category_id: expenseCategoryId || null }),
     });
 }
 

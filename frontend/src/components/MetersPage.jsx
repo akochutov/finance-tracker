@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-    getServiceTypes, getAddresses, getUtilityAccounts, getMeters,
+    getServiceTypes, getAddresses, getUtilityAccounts, getMeters, getExpenseGroups,
     createAddress, updateAddress, deactivateAddress, activateAddress,
     createUtilityAccount, updateUtilityAccount, deactivateUtilityAccount, activateUtilityAccount,
     createMeter, updateMeter, deleteMeter,
@@ -13,19 +13,21 @@ function MetersPage() {
     const [addresses, setAddresses] = useState([]);
     const [accounts, setAccounts] = useState([]);
     const [meters, setMeters] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [selectedId, setSelectedId] = useState(null);
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(null);
 
     async function loadAll() {
         try {
-            const [types, addrs, accs, mts] = await Promise.all([
-                getServiceTypes(), getAddresses(), getUtilityAccounts(), getMeters(),
+            const [types, addrs, accs, mts, grps] = await Promise.all([
+                getServiceTypes(), getAddresses(), getUtilityAccounts(), getMeters(), getExpenseGroups(),
             ]);
             setServiceTypes(types);
             setAddresses(addrs);
             setAccounts(accs);
             setMeters(mts);
+            setGroups(grps);
             setLoaded(true);
         } catch (err) {
             setError(err.message);
@@ -54,9 +56,15 @@ function MetersPage() {
         updateAddress: (id, address) => run(() => updateAddress(id, address)),
         setAddressActive: (id, active) => run(() => (active ? activateAddress(id) : deactivateAddress(id))),
 
-        createAccount: (addressId, service, number, zones) =>
-            run(() => createUtilityAccount({ address_id: addressId, service, number, zones })),
-        updateAccount: (id, number) => run(() => updateUtilityAccount(id, number)),
+        createAccount: (addressId, service, number, zones, categoryId) =>
+            run(() => createUtilityAccount({
+                address_id: addressId,
+                service,
+                number,
+                zones,
+                expense_category_id: categoryId || null,
+            })),
+        updateAccount: (id, number, categoryId) => run(() => updateUtilityAccount(id, number, categoryId)),
         setAccountActive: (id, active) =>
             run(() => (active ? activateUtilityAccount(id) : deactivateUtilityAccount(id))),
 
@@ -94,6 +102,7 @@ function MetersPage() {
                         accounts={accounts}
                         meters={meters}
                         serviceTypes={serviceTypes}
+                        groups={groups}
                         selectedId={selected ? selected.id : null}
                         onSelect={setSelectedId}
                         actions={actions}

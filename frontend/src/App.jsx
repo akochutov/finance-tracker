@@ -9,6 +9,7 @@ import IncomeDashboardPage from "./components/IncomeDashboardPage";
 import ExpenseCategoriesPage from "./components/ExpenseCategoriesPage";
 import ExpensesPage from "./components/ExpensesPage";
 import ExpensesDashboardPage from "./components/ExpensesDashboardPage";
+import UtilitiesDashboardPage from "./components/UtilitiesDashboardPage";
 import MetersPage from "./components/MetersPage";
 import ReadingsPage from "./components/ReadingsPage";
 import TariffsPage from "./components/TariffsPage";
@@ -26,6 +27,7 @@ function App() {
           <div className="sidebar-section-label">Dashboards</div>
           <NavLink to="/" end className="nav-link">Incomes</NavLink>
           <NavLink to="/expenses-dashboard" className="nav-link">Expenses</NavLink>
+          <NavLink to="/utilities-dashboard" className="nav-link">Utilities</NavLink>
 
           <div className="sidebar-section-label">Ledger</div>
           <NavLink to="/incomes" className="nav-link">Incomes</NavLink>
@@ -56,6 +58,7 @@ function App() {
           <Route path="/exchange-rates" element={<ExchangeRatesPage />} />
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/expenses-dashboard" element={<ExpensesDashboardPage />} />
+          <Route path="/utilities-dashboard" element={<UtilitiesDashboardPage />} />
           <Route path="/expense-categories" element={<ExpenseCategoriesPage />} />
           <Route path="/meters" element={<MetersPage />} />
           <Route path="/readings" element={<ReadingsPage />} />

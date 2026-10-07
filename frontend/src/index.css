@@ -1847,3 +1847,111 @@ textarea:focus {
 @media (max-width: 1100px) {
   .tf-editor { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---- Meters: payment category under an account --------------- */
+.mt-category {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--color-neutral-700);
+}
+.mt-subform select.input { flex: 1 1 160px; }
+
+/* ============================================================
+   Utilities dashboard (ud-) — built on the xd- panels and KPIs
+   ============================================================ */
+.ud-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.ud-card-label { display: flex; align-items: center; gap: 8px; }
+.ud-card-label i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.ud-currency { font-size: 14px; font-weight: 600; color: var(--color-neutral-700); }
+.ud-ok { font-weight: 700; color: #2b8a3e; }
+
+/* chart: axis | 12 month columns, each a row of bars */
+.ud-chart-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ud-chart-title h5 { margin: 0; }
+.ud-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.ud-chart { display: flex; gap: 10px; }
+.ud-axis {
+  width: 40px;
+  height: 200px;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 11px;
+  text-align: right;
+  color: var(--color-neutral-700);
+}
+.ud-plot {
+  flex-grow: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+  padding-left: 6px;
+  border-left: 1px solid var(--color-divider);
+}
+.ud-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.ud-col.faded { opacity: 0.5; }
+.ud-bars {
+  height: 200px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.ud-bar { border-radius: 2px 2px 0 0; }
+.ud-month {
+  margin-top: 6px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--color-neutral-800);
+}
+
+/* table: months × columns, consumption over its cost */
+.ud-table-wrap { overflow-x: auto; }
+.ud-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ud-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--color-neutral-700);
+}
+.ud-table th.num, .ud-table td.num { text-align: right; }
+.ud-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef0f5;
+  white-space: nowrap;
+}
+.ud-table tr.current td { background: var(--color-accent-100); font-weight: 700; }
+.ud-cost {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-neutral-700);
+}
