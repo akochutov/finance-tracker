@@ -21,7 +21,6 @@ type AccountRow struct {
 	ID                uuid.UUID
 	Service           string
 	Number            string
-	Zones             string
 	ExpenseCategoryID *uuid.UUID
 }
 
@@ -29,19 +28,14 @@ type MeterRow struct {
 	ID        uuid.UUID
 	AccountID uuid.UUID
 	Serial    string
+	Registers string
 }
 
 type ReadingRow struct {
 	MeterID uuid.UUID
+	Zone    string
 	TakenOn time.Time
 	Value   decimal.Decimal
-}
-
-type ZoneUsageRow struct {
-	AccountID uuid.UUID
-	Month     time.Time
-	Zone      string
-	Quantity  decimal.Decimal
 }
 
 type PaymentRow struct {
@@ -70,49 +64,37 @@ func (r *Repository) Services(ctx context.Context) ([]ServiceRow, error) {
 
 func (r *Repository) Accounts(ctx context.Context) ([]AccountRow, error) {
 	const q = `
-		SELECT id, service, number, zones, expense_category_id
+		SELECT id, service, number, expense_category_id
 		FROM accounts
 		ORDER BY service, number`
 	return collect(ctx, r.db, q, nil, func(row pgx.Rows) (AccountRow, error) {
 		var a AccountRow
-		err := row.Scan(&a.ID, &a.Service, &a.Number, &a.Zones, &a.ExpenseCategoryID)
+		err := row.Scan(&a.ID, &a.Service, &a.Number, &a.ExpenseCategoryID)
 		return a, err
 	})
 }
 
 func (r *Repository) Meters(ctx context.Context) ([]MeterRow, error) {
 	const q = `
-		SELECT id, account_id, serial
+		SELECT id, account_id, serial, registers
 		FROM meters
 		ORDER BY account_id, installed_on, serial`
 	return collect(ctx, r.db, q, nil, func(row pgx.Rows) (MeterRow, error) {
 		var m MeterRow
-		err := row.Scan(&m.ID, &m.AccountID, &m.Serial)
+		err := row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Registers)
 		return m, err
 	})
 }
 
 func (r *Repository) Readings(ctx context.Context) ([]ReadingRow, error) {
 	const q = `
-		SELECT meter_id, taken_on, value
+		SELECT meter_id, zone, taken_on, value
 		FROM readings
-		ORDER BY meter_id, taken_on`
+		ORDER BY meter_id, zone, taken_on`
 	return collect(ctx, r.db, q, nil, func(row pgx.Rows) (ReadingRow, error) {
 		var rd ReadingRow
-		err := row.Scan(&rd.MeterID, &rd.TakenOn, &rd.Value)
+		err := row.Scan(&rd.MeterID, &rd.Zone, &rd.TakenOn, &rd.Value)
 		return rd, err
-	})
-}
-
-func (r *Repository) ZoneUsage(ctx context.Context, from, to time.Time) ([]ZoneUsageRow, error) {
-	const q = `
-		SELECT account_id, month, zone, quantity
-		FROM zone_usage
-		WHERE month >= $1 AND month < $2`
-	return collect(ctx, r.db, q, []any{from, to}, func(row pgx.Rows) (ZoneUsageRow, error) {
-		var z ZoneUsageRow
-		err := row.Scan(&z.AccountID, &z.Month, &z.Zone, &z.Quantity)
-		return z, err
 	})
 }
 

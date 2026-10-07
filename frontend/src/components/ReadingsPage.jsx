@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
     getServiceTypes, getAddresses, getUtilityAccounts, getMeters, getLatestReadings,
-    createReadings, setZoneUsage,
+    createReadings,
 } from "../api/client";
 import { todayISO, formatISODate } from "./expenseUtils";
-import { isDayNight, billingMonthKey, monthLabel, formatReading, sameAmount } from "./meterUtils";
+import { zonesOf, zoneLabel, registerKey, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
 import ReadingsHistory from "./ReadingsHistory";
 
 function ReadingsPage() {
@@ -21,7 +21,6 @@ function ReadingsPage() {
 
     const [takenOn, setTakenOn] = useState(todayISO());
     const [values, setValues] = useState({});
-    const [splits, setSplits] = useState({});
 
     const [searchParams, setSearchParams] = useSearchParams();
     const selectedId = searchParams.get("meter");
@@ -47,7 +46,7 @@ function ReadingsPage() {
     }, []);
 
     const typeOf = (code) => serviceTypes.find((t) => t.code === code);
-    const latestBy = Object.fromEntries(latest.map((r) => [r.meter_id, r]));
+    const latestBy = Object.fromEntries(latest.map((r) => [registerKey(r.meter_id, r.zone), r]));
     const month = billingMonthKey(takenOn);
 
     const activeAddress = new Set(addresses.filter((a) => a.is_active).map((a) => a.id));
@@ -60,9 +59,11 @@ function ReadingsPage() {
         }))
         .filter((g) => g.meters.length > 0);
 
-    function consumptionOf(meter) {
-        const raw = values[meter.id];
-        const prev = latestBy[meter.id];
+    const roundMeters = groups.flatMap((g) => g.meters);
+
+    function consumptionOf(key) {
+        const raw = values[key];
+        const prev = latestBy[key];
         if (raw === undefined || raw === "" || !prev) return null;
         return Number(raw) - Number(prev.value);
     }
@@ -72,29 +73,35 @@ function ReadingsPage() {
         setError(null);
         setStatus(null);
 
-        const readings = Object.entries(values)
-            .filter(([, v]) => v !== "")
-            .map(([meterId, v]) => ({ meter_id: meterId, value: v }));
-        const filledSplits = Object.entries(splits).filter(([, s]) => s.day !== "" && s.night !== "" && s.day !== undefined && s.night !== undefined);
+        const readings = [];
+        const incomplete = [];
+        for (const m of roundMeters) {
+            const zones = zonesOf(m);
+            const filled = zones.filter((z) => (values[registerKey(m.id, z)] ?? "") !== "");
+            if (filled.length === 0) continue;
+            if (filled.length < zones.length) {
+                incomplete.push(m.serial);
+                continue;
+            }
+            for (const z of zones) {
+                readings.push({ meter_id: m.id, zone: z, value: values[registerKey(m.id, z)] });
+            }
+        }
 
-        if (readings.length === 0 && filledSplits.length === 0) {
+        if (incomplete.length > 0) {
+            setError(`Enter both day and night for ${incomplete.join(", ")}.`);
+            return;
+        }
+        if (readings.length === 0) {
             setError("Nothing to save: enter at least one value.");
             return;
         }
 
+        const meterCount = new Set(readings.map((r) => r.meter_id)).size;
         try {
-            if (readings.length > 0) {
-                await createReadings({ taken_on: takenOn, readings });
-            }
-            for (const [accountId, s] of filledSplits) {
-                await setZoneUsage(accountId, month, { day: s.day, night: s.night });
-            }
+            await createReadings({ taken_on: takenOn, readings });
             setValues({});
-            setSplits({});
-            setStatus(
-                `Saved ${readings.length} ${readings.length === 1 ? "reading" : "readings"}` +
-                (filledSplits.length ? ` and the provider split for ${monthLabel(month)}` : "") + "."
-            );
+            setStatus(`Saved readings of ${meterCount} ${meterCount === 1 ? "meter" : "meters"}.`);
             setHistoryKey((k) => k + 1);
             await loadAll();
         } catch (err) {
@@ -142,10 +149,7 @@ function ReadingsPage() {
                                 values={values}
                                 latestBy={latestBy}
                                 consumptionOf={consumptionOf}
-                                onValue={(meterId, v) => setValues({ ...values, [meterId]: v })}
-                                split={splits[g.account.id] || { day: "", night: "" }}
-                                onSplit={(s) => setSplits({ ...splits, [g.account.id]: s })}
-                                month={month}
+                                onValue={(key, v) => setValues({ ...values, [key]: v })}
                             />
                         ))}
 
@@ -155,7 +159,7 @@ function ReadingsPage() {
 
                         <div className="rd-form-foot">
                             <span className="mt-hint">
-                                Meters left empty are skipped. A provider split can be added later, when the bill arrives.
+                                Meters left empty are skipped. A day/night meter needs both registers.
                             </span>
                             {status && <span className="status-ok">{status}</span>}
                             <button type="submit" className="btn btn-primary">Save readings</button>
@@ -177,83 +181,45 @@ function ReadingsPage() {
     );
 }
 
-function AccountRound({ group, values, latestBy, consumptionOf, onValue, split, onSplit, month }) {
+function AccountRound({ group, values, latestBy, consumptionOf, onValue }) {
     const { account, type, meters } = group;
     const unit = type ? type.unit : "";
-    const dayNight = isDayNight(account);
-
-    const consumptions = meters.map(consumptionOf);
-    const total = consumptions.every((c) => c !== null) ? consumptions.reduce((a, b) => a + b, 0) : null;
-    const splitFilled = split.day !== "" && split.night !== "";
-    const splitSum = splitFilled ? Number(split.day) + Number(split.night) : null;
-
-    let check = null;
-    if (splitFilled && total !== null) {
-        const diff = splitSum - total;
-        check = sameAmount(splitSum, total)
-            ? <span className="rd-check ok">✓ {formatReading(total)} — matches the meter</span>
-            : <span className="rd-check bad">{diff > 0 ? "+" : "−"}{formatReading(Math.abs(diff))} {unit} against the meter</span>;
-    }
 
     return (
         <div className="rd-account">
             <div className="rd-account-title">
                 {type ? type.name : account.service} <span className="mono row-meta">· {account.number}</span>
-                {dayNight && <span className="mt-zone-badge dual">day/night</span>}
             </div>
 
-            {meters.map((m) => {
-                const prev = latestBy[m.id];
-                const c = consumptionOf(m);
-                return (
-                    <div key={m.id} className="rd-round-row">
-                        <span className="mono">{m.serial}</span>
-                        <span className="num mono row-meta">
-                            {prev ? `${formatReading(prev.value)} · ${formatISODate(prev.taken_on)}` : "—"}
-                        </span>
-                        <input
-                            className="input mono"
-                            type="number"
-                            step="any"
-                            min="0"
-                            placeholder={unit}
-                            value={values[m.id] ?? ""}
-                            onChange={(e) => onValue(m.id, e.target.value)}
-                        />
-                        <span className={c === null ? "num mono mt-delta none" : c < 0 ? "num mono rd-negative" : "num mono mt-delta"}>
-                            {c === null ? "—" : `${c < 0 ? "−" : "+"}${formatReading(Math.abs(c))}`}
-                        </span>
-                    </div>
-                );
-            })}
-
-            {dayNight && (
-                <div className="rd-split">
-                    <span className="mt-info-label">Provider split · {monthLabel(month)}</span>
-                    <label className="rd-split-field">
-                        day
-                        <input
-                            className="input mono"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={split.day}
-                            onChange={(e) => onSplit({ ...split, day: e.target.value })}
-                        />
-                    </label>
-                    <label className="rd-split-field">
-                        night
-                        <input
-                            className="input mono"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={split.night}
-                            onChange={(e) => onSplit({ ...split, night: e.target.value })}
-                        />
-                    </label>
-                    {check}
-                </div>
+            {meters.flatMap((m) =>
+                zonesOf(m).map((z) => {
+                    const key = registerKey(m.id, z);
+                    const prev = latestBy[key];
+                    const c = consumptionOf(key);
+                    return (
+                        <div key={key} className="rd-round-row">
+                            <span className="rd-register">
+                                <span className="mono">{m.serial}</span>
+                                {zoneLabel(z) && <span className="mt-zone-badge dual">{zoneLabel(z).toLowerCase()}</span>}
+                            </span>
+                            <span className="num mono row-meta">
+                                {prev ? `${formatReading(prev.value)} · ${formatISODate(prev.taken_on)}` : "—"}
+                            </span>
+                            <input
+                                className="input mono"
+                                type="number"
+                                step="any"
+                                min="0"
+                                placeholder={unit}
+                                value={values[key] ?? ""}
+                                onChange={(e) => onValue(key, e.target.value)}
+                            />
+                            <span className={c === null ? "num mono mt-delta none" : c < 0 ? "num mono rd-negative" : "num mono mt-delta"}>
+                                {c === null ? "—" : `${c < 0 ? "−" : "+"}${formatReading(Math.abs(c))}`}
+                            </span>
+                        </div>
+                    );
+                })
             )}
         </div>
     );

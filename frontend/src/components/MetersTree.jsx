@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatISODate, todayISO } from "./expenseUtils";
-import { isDayNight, ZONES_SINGLE, ZONES_DAY_NIGHT } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, REGISTERS_SINGLE, REGISTERS_DAY_NIGHT } from "./meterUtils";
 
 function PaymentCategorySelect({ groups, value, onChange }) {
     return (
@@ -76,7 +76,6 @@ function AddressNode({ address, accounts, meters, serviceTypes, groups, selected
     const [name, setName] = useState(address.address);
     const [service, setService] = useState(serviceTypes[0]?.code || "");
     const [number, setNumber] = useState("");
-    const [zones, setZones] = useState(ZONES_SINGLE);
     const [categoryId, setCategoryId] = useState("");
 
     const meterCount = meters.filter((m) => accounts.some((acc) => acc.id === m.account_id)).length;
@@ -88,9 +87,8 @@ function AddressNode({ address, accounts, meters, serviceTypes, groups, selected
 
     async function addAccount(e) {
         e.preventDefault();
-        if (await actions.createAccount(address.id, service, number, zones, categoryId)) {
+        if (await actions.createAccount(address.id, service, number, categoryId)) {
             setNumber("");
-            setZones(ZONES_SINGLE);
             setCategoryId("");
         }
     }
@@ -156,11 +154,6 @@ function AddressNode({ address, accounts, meters, serviceTypes, groups, selected
                                 value={number}
                                 onChange={(e) => setNumber(e.target.value)}
                             />
-                            {/* Zones are a term of the contract: chosen once, never changed */}
-                            <select className="input" value={zones} onChange={(e) => setZones(e.target.value)}>
-                                <option value={ZONES_SINGLE}>Single zone</option>
-                                <option value={ZONES_DAY_NIGHT}>Day / night</option>
-                            </select>
                             <PaymentCategorySelect groups={groups} value={categoryId} onChange={setCategoryId} />
                             <button type="submit" className="btn btn-secondary btn-sm">+ Account</button>
                         </form>
@@ -178,7 +171,8 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
     const [adding, setAdding] = useState(false);
     const [serial, setSerial] = useState("");
     const [installedOn, setInstalledOn] = useState(todayISO());
-    const [initialValue, setInitialValue] = useState("");
+    const [registers, setRegisters] = useState(REGISTERS_SINGLE);
+    const [initialValues, setInitialValues] = useState({});
     const [initialOn, setInitialOn] = useState("");
 
     async function saveAccount(e) {
@@ -194,20 +188,28 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
 
     const category = categoryName(groups, account.expense_category_id);
 
+    const newZones = zonesOf({ registers });
+
     async function addMeter(e) {
         e.preventDefault();
+        const values = {};
+        for (const z of newZones) {
+            if (initialValues[z] !== undefined && initialValues[z] !== "") values[z] = initialValues[z];
+        }
         const ok = await actions.createMeter({
             account_id: account.id,
             serial,
+            registers,
             installed_on: installedOn,
             removed_on: null,
             initial_on: initialOn || null,
-            initial_value: initialValue === "" ? null : initialValue,
+            initial_values: values,
         });
         if (ok) {
             setAdding(false);
             setSerial("");
-            setInitialValue("");
+            setRegisters(REGISTERS_SINGLE);
+            setInitialValues({});
             setInitialOn("");
         }
     }
@@ -225,10 +227,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
                 <div className="mt-account-head">
                     <span>
                         <strong>{serviceType ? serviceType.name : account.service}</strong>{" "}
-                        <span className="mono row-meta">· {account.number}</span>{" "}
-                        <span className={isDayNight(account) ? "mt-zone-badge dual" : "mt-zone-badge"}>
-                            {isDayNight(account) ? "day/night" : "single"}
-                        </span>
+                        <span className="mono row-meta">· {account.number}</span>
                         {!account.is_active && <span className="row-meta"> · inactive</span>}
                     </span>
                     <span className="mt-actions">
@@ -259,6 +258,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
                     return (
                         <button type="button" key={m.id} className={classes.join(" ")} onClick={() => onSelect(m.id)}>
                             <span className="mono">{m.serial}</span>
+                            {isDayNight(m) && <span className="mt-zone-badge dual">day/night</span>}
                             <span className="mt-since">
                                 {m.removed_on
                                     ? `removed ${formatISODate(m.removed_on)}`
@@ -280,23 +280,36 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
                         <input className="input" type="date" value={installedOn} onChange={(e) => setInstalledOn(e.target.value)} />
                     </div>
                     <div className="field">
-                        <label>Initial value{serviceType ? `, ${serviceType.unit}` : ""}</label>
-                        <input
-                            className="input mono"
-                            type="number"
-                            step="any"
-                            min="0"
-                            value={initialValue}
-                            onChange={(e) => setInitialValue(e.target.value)}
-                        />
+                        <label>Registers</label>
+                        <select className="input" value={registers} onChange={(e) => setRegisters(e.target.value)}>
+                            <option value={REGISTERS_SINGLE}>Single</option>
+                            <option value={REGISTERS_DAY_NIGHT}>Day / night</option>
+                        </select>
                     </div>
                     <div className="field">
-                        <label>Initial value on</label>
+                        <label>Initial values on</label>
                         <input className="input" type="date" value={initialOn} onChange={(e) => setInitialOn(e.target.value)} />
                     </div>
+                    {newZones.map((z) => (
+                        <div className="field" key={z}>
+                            <label>
+                                {zoneLabel(z) ? `Initial ${zoneLabel(z).toLowerCase()}` : "Initial value"}
+                                {serviceType ? `, ${serviceType.unit}` : ""}
+                            </label>
+                            <input
+                                className="input mono"
+                                type="number"
+                                step="any"
+                                min="0"
+                                value={initialValues[z] ?? ""}
+                                onChange={(e) => setInitialValues({ ...initialValues, [z]: e.target.value })}
+                            />
+                        </div>
+                    ))}
                     <div className="mt-hint mt-meter-form-hint">
-                        The value on the meter when tracking starts — not counted as consumption.
-                        Leave the date empty to use the installation day; set it to the move-in day otherwise.
+                        What the meter shows when tracking starts — not counted as consumption.
+                        A day/night meter needs both registers. Leave the date empty to use the
+                        installation day; set it to the move-in day otherwise.
                     </div>
                     <div className="mt-meter-form-actions">
                         <button type="submit" className="btn btn-primary btn-sm">Add</button>

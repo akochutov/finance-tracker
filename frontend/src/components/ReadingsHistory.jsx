@@ -1,31 +1,24 @@
 import { useState, useEffect } from "react";
-import { getReadings, getZoneUsage, updateReading, deleteReading, setZoneUsage, deleteZoneUsage } from "../api/client";
+import { getReadings, updateReading, deleteReading } from "../api/client";
 import { formatISODate } from "./expenseUtils";
-import { isDayNight, billingMonthKey, monthLabel, formatReading, sameAmount } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, groupByDate, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
 
 function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect, reloadKey, onChanged }) {
     const [readings, setReadings] = useState([]);
-    const [usage, setUsage] = useState([]);
     const [localKey, setLocalKey] = useState(0);
     const [error, setError] = useState(null);
     const [editRow, setEditRow] = useState(null);
 
     const meter = meters.find((m) => m.id === selectedId) || meters[0] || null;
-    const account = meter ? accounts.find((a) => a.id === meter.account_id) : null;
-    const type = account ? serviceTypes.find((t) => t.code === account.service) : null;
-    const dayNight = isDayNight(account);
-    const unit = type ? type.unit : "";
 
     useEffect(() => {
         if (!meter) return;
         let ignore = false;
         setError(null);
         setEditRow(null);
-        Promise.all([getReadings(meter.id), dayNight ? getZoneUsage(account.id) : Promise.resolve([])])
-            .then(([rds, zu]) => {
-                if (ignore) return;
-                setReadings(rds);
-                setUsage(zu);
+        getReadings(meter.id)
+            .then((rds) => {
+                if (!ignore) setReadings(rds);
             })
             .catch((err) => {
                 if (!ignore) setError(err.message);
@@ -33,15 +26,13 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
         return () => {
             ignore = true;
         };
-    }, [meter?.id, dayNight, reloadKey, localKey]);
+    }, [meter?.id, reloadKey, localKey]);
 
     if (!meter) return null;
 
-    const splitBy = {};
-    for (const u of usage) {
-        const key = u.month.slice(0, 7);
-        splitBy[key] = { ...(splitBy[key] || {}), [u.zone]: Number(u.quantity) };
-    }
+    const dayNight = isDayNight(meter);
+    const zones = zonesOf(meter);
+    const rounds = groupByDate(readings);
 
     async function run(action) {
         setError(null);
@@ -57,42 +48,45 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
         }
     }
 
-    function startEdit(r) {
-        const key = billingMonthKey(r.taken_on);
-        const s = splitBy[key] || {};
-        setEditRow({
-            id: r.id,
-            date: r.taken_on.slice(0, 10),
-            value: String(r.value),
-            day: s.day !== undefined ? String(s.day) : "",
-            night: s.night !== undefined ? String(s.night) : "",
-            hadSplit: Boolean(splitBy[key]),
-            isInitial: r.is_initial,
-        });
+    function startEdit(round) {
+        const vals = {};
+        for (const z of zones) {
+            const r = round.byZone[z];
+            vals[z] = r ? String(r.value) : "";
+        }
+        setEditRow({ key: round.taken_on, round, date: round.taken_on.slice(0, 10), values: vals });
     }
 
     async function saveEdit() {
         const ok = await run(async () => {
-            await updateReading(meter.id, editRow.id, { taken_on: editRow.date, value: editRow.value });
-            if (dayNight && !editRow.isInitial) {
-                const key = billingMonthKey(editRow.date);
-                if (editRow.day !== "" && editRow.night !== "") {
-                    await setZoneUsage(account.id, key, { day: editRow.day, night: editRow.night });
-                } else if (editRow.day === "" && editRow.night === "" && editRow.hadSplit) {
-                    await deleteZoneUsage(account.id, key);
-                }
+            for (const z of zones) {
+                const r = editRow.round.byZone[z];
+                if (!r) continue;
+                await updateReading(meter.id, r.id, { taken_on: editRow.date, value: editRow.values[z] });
             }
         });
         if (ok) setEditRow(null);
     }
 
-    async function remove(r) {
-        if (!window.confirm(`Delete the reading of ${formatISODate(r.taken_on)}?`)) return;
-        await run(() => deleteReading(meter.id, r.id));
+    async function remove(round) {
+        if (!window.confirm(`Delete the reading of ${formatISODate(round.taken_on)}?`)) return;
+        await run(async () => {
+            for (const r of Object.values(round.byZone)) {
+                await deleteReading(meter.id, r.id);
+            }
+        });
     }
 
     const rowClass = dayNight ? "rd-hist-row day-night" : "rd-hist-row";
     const tabs = [...meters].sort((a, b) => Number(Boolean(a.removed_on)) - Number(Boolean(b.removed_on)));
+
+    function deltaCell(value, key) {
+        return (
+            <span key={key} className={value === null ? "num mt-delta none" : "num mono mt-delta"}>
+                {value === null ? "—" : `+${formatReading(value)}`}
+            </span>
+        );
+    }
 
     return (
         <section className="xd-panel">
@@ -119,41 +113,56 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
             <div className={`${rowClass} rd-hist-labels`}>
                 <span>Date</span>
                 <span>For month</span>
-                <span className="num">Meter</span>
-                <span className="num">Consumption</span>
-                {dayNight && (
+                {dayNight ? (
                     <>
-                        <span className="num">Provider day</span>
-                        <span className="num">Provider night</span>
-                        <span className="num">Check</span>
+                        <span className="num">Day</span>
+                        <span className="num">Night</span>
+                        <span className="num">Day +</span>
+                        <span className="num">Night +</span>
+                        <span className="num">Total</span>
+                    </>
+                ) : (
+                    <>
+                        <span className="num">Meter</span>
+                        <span className="num">Consumption</span>
                     </>
                 )}
                 <span></span>
             </div>
 
-            {readings.map((r, i) => {
-                const older = readings[i + 1] || null;
-                const consumption = older ? Number(r.value) - Number(older.value) : null;
-                const key = billingMonthKey(r.taken_on);
-                const split = !r.is_initial && older ? splitBy[key] : null;
+            {rounds.map((round, i) => {
+                const older = rounds[i + 1] || null;
+                const deltas = zones.map((z) => {
+                    const r = round.byZone[z];
+                    const o = older ? older.byZone[z] : null;
+                    return r && o ? Number(r.value) - Number(o.value) : null;
+                });
+                const total = deltas.every((d) => d !== null) ? deltas.reduce((a, b) => a + b, 0) : null;
+                const key = billingMonthKey(round.taken_on);
 
-                if (editRow && editRow.id === r.id) {
+                if (editRow && editRow.key === round.taken_on) {
                     return (
-                        <div key={r.id} className={rowClass}>
+                        <div key={round.taken_on} className={rowClass}>
                             <input className="input" type="date" value={editRow.date} onChange={(e) => setEditRow({ ...editRow, date: e.target.value })} />
-                            <span className="row-meta">{r.is_initial ? "Initial" : monthLabel(billingMonthKey(editRow.date))}</span>
-                            <input className="input mono" type="number" step="any" min="0" value={editRow.value} onChange={(e) => setEditRow({ ...editRow, value: e.target.value })} />
+                            <span className="row-meta">{round.is_initial ? "Initial" : monthLabel(billingMonthKey(editRow.date))}</span>
+                            {zones.map((z) => (
+                                <input
+                                    key={z}
+                                    className="input mono"
+                                    type="number"
+                                    step="any"
+                                    min="0"
+                                    placeholder={zoneLabel(z).toLowerCase()}
+                                    value={editRow.values[z]}
+                                    onChange={(e) => setEditRow({ ...editRow, values: { ...editRow.values, [z]: e.target.value } })}
+                                />
+                            ))}
                             <span></span>
                             {dayNight && (
-                                r.is_initial ? (
-                                    <><span></span><span></span><span></span></>
-                                ) : (
-                                    <>
-                                        <input className="input mono" type="number" step="any" min="0" placeholder="day" value={editRow.day} onChange={(e) => setEditRow({ ...editRow, day: e.target.value })} />
-                                        <input className="input mono" type="number" step="any" min="0" placeholder="night" value={editRow.night} onChange={(e) => setEditRow({ ...editRow, night: e.target.value })} />
-                                        <span></span>
-                                    </>
-                                )
+                                <>
+                                    <span></span>
+                                    <span></span>
+                                </>
                             )}
                             <span className="mt-row-actions">
                                 <button type="button" className="mt-link" onClick={saveEdit}>save</button>
@@ -163,44 +172,46 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
                     );
                 }
 
-                let check = <span></span>;
-                if (split && split.day !== undefined && split.night !== undefined && consumption !== null) {
-                    const sum = split.day + split.night;
-                    check = sameAmount(sum, consumption)
-                        ? <span className="num rd-check ok">✓ matches</span>
-                        : <span className="num rd-check bad">{sum > consumption ? "+" : "−"}{formatReading(Math.abs(sum - consumption))} {unit}</span>;
-                }
-
                 return (
-                    <div key={r.id} className={r.is_initial ? `${rowClass} initial` : rowClass}>
-                        <span>{formatISODate(r.taken_on)}</span>
-                        <span className="row-meta">{r.is_initial ? "Initial" : older ? monthLabel(key) : "—"}</span>
-                        <span className="num mono">{formatReading(r.value)}</span>
-                        <span className={consumption === null ? "num mt-delta none" : "num mono mt-delta"}>
-                            {r.is_initial ? "starting point" : consumption === null ? "—" : `+${formatReading(consumption)}`}
-                        </span>
-                        {dayNight && (
+                    <div key={round.taken_on} className={round.is_initial ? `${rowClass} initial` : rowClass}>
+                        <span>{formatISODate(round.taken_on)}</span>
+                        <span className="row-meta">{round.is_initial ? "Initial" : older ? monthLabel(key) : "—"}</span>
+                        {zones.map((z) => (
+                            <span key={z} className="num mono">
+                                {round.byZone[z] ? formatReading(round.byZone[z].value) : "—"}
+                            </span>
+                        ))}
+                        {round.is_initial ? (
                             <>
-                                <span className="num mono">{split && split.day !== undefined ? formatReading(split.day) : ""}</span>
-                                <span className="num mono">{split && split.night !== undefined ? formatReading(split.night) : ""}</span>
-                                {check}
+                                <span className="num mt-delta none">starting point</span>
+                                {dayNight && (
+                                    <>
+                                        <span></span>
+                                        <span></span>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {dayNight && deltas.map((d, k) => deltaCell(d, zones[k]))}
+                                {deltaCell(total, "total")}
                             </>
                         )}
                         <span className="mt-row-actions">
-                            <button type="button" className="mt-link" onClick={() => startEdit(r)}>edit</button>
-                            {!r.is_initial && (
-                                <button type="button" className="mt-link mt-link-danger" onClick={() => remove(r)}>delete</button>
+                            <button type="button" className="mt-link" onClick={() => startEdit(round)}>edit</button>
+                            {!round.is_initial && (
+                                <button type="button" className="mt-link mt-link-danger" onClick={() => remove(round)}>delete</button>
                             )}
                         </span>
                     </div>
                 );
             })}
 
-            {readings.length === 0 && <p className="xd-note">No readings yet.</p>}
+            {rounds.length === 0 && <p className="xd-note">No readings yet.</p>}
 
             <p className="xd-note">
                 {dayNight
-                    ? "The meter shows one value; the provider splits each month into day and night. The check compares the split with the meter."
+                    ? "Each register counts on its own: day and night are the differences with the previous reading of the same register."
                     : "Consumption is the difference with the previous reading. A reading of early October closes September."}
             </p>
         </section>

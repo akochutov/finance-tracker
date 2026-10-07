@@ -20,7 +20,6 @@ type Service struct {
 	accounts     *AccountRepository
 	meters       *MeterRepository
 	readings     *ReadingRepository
-	zoneUsage    *ZoneUsageRepository
 }
 
 func NewService(
@@ -29,7 +28,6 @@ func NewService(
 	accounts *AccountRepository,
 	meters *MeterRepository,
 	readings *ReadingRepository,
-	zoneUsage *ZoneUsageRepository,
 ) *Service {
 	return &Service{
 		serviceTypes: serviceTypes,
@@ -37,7 +35,6 @@ func NewService(
 		accounts:     accounts,
 		meters:       meters,
 		readings:     readings,
-		zoneUsage:    zoneUsage,
 	}
 }
 
@@ -86,21 +83,14 @@ func (s *Service) SetAddressActive(ctx context.Context, id uuid.UUID, active boo
 	return s.addresses.SetActive(ctx, id, active)
 }
 
-func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, service, number, zones string, categoryID *uuid.UUID) (Account, error) {
+func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, service, number string, categoryID *uuid.UUID) (Account, error) {
 	service = strings.ToLower(strings.TrimSpace(service))
 	number = strings.TrimSpace(number)
-	zones = strings.ToLower(strings.TrimSpace(zones))
 	if service == "" {
 		return Account{}, fmt.Errorf("%w: service is required", ErrInvalidInput)
 	}
 	if number == "" {
 		return Account{}, fmt.Errorf("%w: account number is required", ErrInvalidInput)
-	}
-	if zones == "" {
-		zones = ZonesSingle
-	}
-	if zones != ZonesSingle && zones != ZonesDayNight {
-		return Account{}, fmt.Errorf("%w: zones must be %q or %q", ErrInvalidInput, ZonesSingle, ZonesDayNight)
 	}
 
 	addr, err := s.addresses.GetByID(ctx, addressID)
@@ -121,7 +111,6 @@ func (s *Service) CreateAccount(ctx context.Context, addressID uuid.UUID, servic
 		AddressID:         addressID,
 		Service:           service,
 		Number:            number,
-		Zones:             zones,
 		ExpenseCategoryID: categoryID,
 		IsActive:          true,
 	})
@@ -156,19 +145,29 @@ func (s *Service) SetAccountActive(ctx context.Context, id uuid.UUID, active boo
 	return s.accounts.SetActive(ctx, id, active)
 }
 
-func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial string, installedOn time.Time, removedOn *time.Time, initialOn time.Time, initialValue *decimal.Decimal) (Meter, error) {
+func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial, registers string, installedOn time.Time, removedOn *time.Time, initialOn time.Time, initialValues map[string]decimal.Decimal) (Meter, error) {
 	serial = strings.TrimSpace(serial)
 	installedOn, removedOn, err := normalizeMeter(serial, installedOn, removedOn)
 	if err != nil {
 		return Meter{}, err
 	}
 
-	if initialValue == nil {
+	registers = strings.ToLower(strings.TrimSpace(registers))
+	if registers == "" {
+		registers = RegistersSingle
+	}
+	if registers != RegistersSingle && registers != RegistersDayNight {
+		return Meter{}, fmt.Errorf("%w: registers must be %q or %q", ErrInvalidInput, RegistersSingle, RegistersDayNight)
+	}
+
+	zones := ZonesOf(registers)
+	if len(initialValues) == 0 {
 		return Meter{}, ErrInitialReadingRequired
 	}
-	if initialValue.IsNegative() {
-		return Meter{}, fmt.Errorf("%w: initial reading must not be negative", ErrInvalidInput)
+	if len(initialValues) != len(zones) {
+		return Meter{}, fmt.Errorf("%w: expected initial values for %s", ErrInvalidInput, strings.Join(zones, ", "))
 	}
+
 	if initialOn.IsZero() {
 		initialOn = installedOn
 	}
@@ -182,20 +181,30 @@ func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial s
 		return Meter{}, ErrAccountInactive
 	}
 
-	meter := Meter{AccountID: accountID, Serial: serial, InstalledOn: installedOn, RemovedOn: removedOn}
+	meter := Meter{AccountID: accountID, Serial: serial, Registers: registers, InstalledOn: installedOn, RemovedOn: removedOn}
 	if err := checkInService(meter, initialOn); err != nil {
 		return Meter{}, err
+	}
+
+	initial := make([]Reading, 0, len(zones))
+	for _, z := range zones {
+		value, ok := initialValues[z]
+		if !ok {
+			return Meter{}, fmt.Errorf("%w: missing initial value for %s", ErrInvalidInput, z)
+		}
+		if value.IsNegative() {
+			return Meter{}, fmt.Errorf("%w: initial value must not be negative", ErrInvalidInput)
+		}
+		id, err := uuid.NewV7()
+		if err != nil {
+			return Meter{}, fmt.Errorf("generate uuid: %w", err)
+		}
+		initial = append(initial, Reading{ID: id, Zone: z, TakenOn: initialOn, Value: value, IsInitial: true})
 	}
 
 	if meter.ID, err = uuid.NewV7(); err != nil {
 		return Meter{}, fmt.Errorf("generate uuid: %w", err)
 	}
-	readingID, err := uuid.NewV7()
-	if err != nil {
-		return Meter{}, fmt.Errorf("generate uuid: %w", err)
-	}
-
-	initial := Reading{ID: readingID, TakenOn: initialOn, Value: *initialValue, IsInitial: true}
 	return s.meters.Create(ctx, meter, initial)
 }
 
@@ -232,7 +241,7 @@ func (s *Service) DeleteMeter(ctx context.Context, id uuid.UUID) error {
 	return s.meters.Delete(ctx, id)
 }
 
-func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values map[uuid.UUID]decimal.Decimal) ([]Reading, error) {
+func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values map[uuid.UUID]map[string]decimal.Decimal) ([]Reading, error) {
 	if takenOn.IsZero() {
 		return nil, fmt.Errorf("%w: reading date is required", ErrInvalidInput)
 	}
@@ -241,8 +250,8 @@ func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values 
 	}
 	takenOn = dateOnly(takenOn)
 
-	readings := make([]Reading, 0, len(values))
-	for meterID, value := range values {
+	readings := make([]Reading, 0, len(values)*2)
+	for meterID, byZone := range values {
 		meter, err := s.meters.GetByID(ctx, meterID)
 		if err != nil {
 			return nil, err
@@ -250,15 +259,25 @@ func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values 
 		if err := checkInService(meter, takenOn); err != nil {
 			return nil, fmt.Errorf("meter %s: %w", meter.Serial, err)
 		}
-		if err := s.checkMonotonic(ctx, meter, takenOn, value, uuid.Nil, false); err != nil {
-			return nil, err
-		}
 
-		id, err := uuid.NewV7()
-		if err != nil {
-			return nil, fmt.Errorf("generate uuid: %w", err)
+		zones := ZonesOf(meter.Registers)
+		if len(byZone) != len(zones) {
+			return nil, fmt.Errorf("%w: meter %s: expected values for %s", ErrInvalidInput, meter.Serial, strings.Join(zones, ", "))
 		}
-		readings = append(readings, Reading{ID: id, MeterID: meterID, TakenOn: takenOn, Value: value})
+		for _, z := range zones {
+			value, ok := byZone[z]
+			if !ok {
+				return nil, fmt.Errorf("%w: meter %s: missing value for %s", ErrInvalidInput, meter.Serial, z)
+			}
+			if err := s.checkMonotonic(ctx, meter, z, takenOn, value, uuid.Nil, false); err != nil {
+				return nil, err
+			}
+			id, err := uuid.NewV7()
+			if err != nil {
+				return nil, fmt.Errorf("generate uuid: %w", err)
+			}
+			readings = append(readings, Reading{ID: id, MeterID: meterID, Zone: z, TakenOn: takenOn, Value: value})
+		}
 	}
 
 	return s.readings.CreateBatch(ctx, readings)
@@ -288,7 +307,7 @@ func (s *Service) UpdateReading(ctx context.Context, meterID, readingID uuid.UUI
 	if err := checkInService(meter, takenOn); err != nil {
 		return Reading{}, err
 	}
-	if err := s.checkMonotonic(ctx, meter, takenOn, value, rd.ID, rd.IsInitial); err != nil {
+	if err := s.checkMonotonic(ctx, meter, rd.Zone, takenOn, value, rd.ID, rd.IsInitial); err != nil {
 		return Reading{}, err
 	}
 
@@ -321,80 +340,36 @@ func (s *Service) readingOfMeter(ctx context.Context, meterID, readingID uuid.UU
 	return meter, rd, nil
 }
 
-func (s *Service) checkMonotonic(ctx context.Context, meter Meter, day time.Time, value decimal.Decimal, excludeID uuid.UUID, isInitial bool) error {
+func (s *Service) checkMonotonic(ctx context.Context, meter Meter, zone string, day time.Time, value decimal.Decimal, excludeID uuid.UUID, isInitial bool) error {
+	name := meter.Serial
+	if zone != ZoneSingle {
+		name += " " + zone
+	}
 	if value.IsNegative() {
-		return fmt.Errorf("%w: meter %s: value must not be negative", ErrInvalidInput, meter.Serial)
+		return fmt.Errorf("%w: meter %s: value must not be negative", ErrInvalidInput, name)
 	}
 
-	prev, next, err := s.readings.Neighbors(ctx, meter.ID, day, excludeID)
+	prev, next, err := s.readings.Neighbors(ctx, meter.ID, zone, day, excludeID)
 	if err != nil {
 		return err
 	}
 
 	if isInitial && prev != nil {
 		return fmt.Errorf("%w: meter %s: the initial reading must be the earliest, there is one of %s",
-			ErrInvalidInput, meter.Serial, prev.TakenOn.Format(dateLayout))
+			ErrInvalidInput, name, prev.TakenOn.Format(dateLayout))
 	}
 	if !isInitial && prev == nil {
-		return fmt.Errorf("%w: meter %s: the reading is before the initial reading", ErrInvalidInput, meter.Serial)
+		return fmt.Errorf("%w: meter %s: the reading is before the initial reading", ErrInvalidInput, name)
 	}
 	if prev != nil && value.LessThan(prev.Value) {
 		return fmt.Errorf("%w: meter %s: value %s is below the previous reading %s of %s",
-			ErrInvalidInput, meter.Serial, value, prev.Value, prev.TakenOn.Format(dateLayout))
+			ErrInvalidInput, name, value, prev.Value, prev.TakenOn.Format(dateLayout))
 	}
 	if next != nil && value.GreaterThan(next.Value) {
 		return fmt.Errorf("%w: meter %s: value %s is above the next reading %s of %s",
-			ErrInvalidInput, meter.Serial, value, next.Value, next.TakenOn.Format(dateLayout))
+			ErrInvalidInput, name, value, next.Value, next.TakenOn.Format(dateLayout))
 	}
 	return nil
-}
-
-func (s *Service) SetZoneUsage(ctx context.Context, accountID uuid.UUID, month time.Time, values map[string]decimal.Decimal) ([]ZoneUsage, error) {
-	if month.IsZero() {
-		return nil, fmt.Errorf("%w: month is required", ErrInvalidInput)
-	}
-	month = firstOfMonth(month)
-
-	acc, err := s.accounts.GetByID(ctx, accountID)
-	if err != nil {
-		return nil, err
-	}
-	if acc.Zones != ZonesDayNight {
-		return nil, ErrZonesNotSplit
-	}
-
-	zones := []string{ZoneDay, ZoneNight}
-	if len(values) != len(zones) {
-		return nil, fmt.Errorf("%w: expected usage for day and night", ErrInvalidInput)
-	}
-
-	usage := make([]ZoneUsage, 0, len(zones))
-	for _, z := range zones {
-		q, ok := values[z]
-		if !ok {
-			return nil, fmt.Errorf("%w: missing usage for zone %q", ErrInvalidInput, z)
-		}
-		if q.IsNegative() {
-			return nil, fmt.Errorf("%w: %s usage must not be negative", ErrInvalidInput, z)
-		}
-		usage = append(usage, ZoneUsage{AccountID: accountID, Month: month, Zone: z, Quantity: q})
-	}
-
-	return s.zoneUsage.SetMonth(ctx, usage)
-}
-
-func (s *Service) ListZoneUsage(ctx context.Context, accountID uuid.UUID) ([]ZoneUsage, error) {
-	if _, err := s.accounts.GetByID(ctx, accountID); err != nil {
-		return nil, err
-	}
-	return s.zoneUsage.ListByAccount(ctx, accountID)
-}
-
-func (s *Service) DeleteZoneUsage(ctx context.Context, accountID uuid.UUID, month time.Time) error {
-	if _, err := s.accounts.GetByID(ctx, accountID); err != nil {
-		return err
-	}
-	return s.zoneUsage.DeleteMonth(ctx, accountID, firstOfMonth(month))
 }
 
 func normalizeMeter(serial string, installedOn time.Time, removedOn *time.Time) (time.Time, *time.Time, error) {
@@ -435,9 +410,4 @@ func checkInService(m Meter, day time.Time) error {
 func dateOnly(t time.Time) time.Time {
 	y, m, d := t.Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
-}
-
-func firstOfMonth(t time.Time) time.Time {
-	y, m, _ := t.Date()
-	return time.Date(y, m, 1, 0, 0, 0, 0, time.UTC)
 }

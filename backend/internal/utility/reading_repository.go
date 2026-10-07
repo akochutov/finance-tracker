@@ -13,7 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const readingColumns = "id, meter_id, taken_on, value, is_initial, created_at, updated_at"
+const readingColumns = "id, meter_id, zone, taken_on, value, is_initial, created_at, updated_at"
 
 type ReadingRepository struct {
 	db *pgxpool.Pool
@@ -65,39 +65,39 @@ func (r *ReadingRepository) ListByMeter(ctx context.Context, meterID uuid.UUID) 
 		SELECT ` + readingColumns + `
 		FROM readings
 		WHERE meter_id = $1
-		ORDER BY taken_on DESC`
+		ORDER BY taken_on DESC, zone`
 
 	return r.list(ctx, q, meterID)
 }
 
 func (r *ReadingRepository) LatestPerMeter(ctx context.Context) ([]Reading, error) {
 	const q = `
-		SELECT DISTINCT ON (meter_id) ` + readingColumns + `
+		SELECT DISTINCT ON (meter_id, zone) ` + readingColumns + `
 		FROM readings
-		ORDER BY meter_id, taken_on DESC`
+		ORDER BY meter_id, zone, taken_on DESC`
 
 	return r.list(ctx, q)
 }
 
-func (r *ReadingRepository) Neighbors(ctx context.Context, meterID uuid.UUID, day time.Time, excludeID uuid.UUID) (*Reading, *Reading, error) {
+func (r *ReadingRepository) Neighbors(ctx context.Context, meterID uuid.UUID, zone string, day time.Time, excludeID uuid.UUID) (*Reading, *Reading, error) {
 	const prevQ = `
 		SELECT ` + readingColumns + `
 		FROM readings
-		WHERE meter_id = $1 AND taken_on < $2 AND id <> $3
+		WHERE meter_id = $1 AND zone = $2 AND taken_on < $3 AND id <> $4
 		ORDER BY taken_on DESC
 		LIMIT 1`
 	const nextQ = `
 		SELECT ` + readingColumns + `
 		FROM readings
-		WHERE meter_id = $1 AND taken_on > $2 AND id <> $3
+		WHERE meter_id = $1 AND zone = $2 AND taken_on > $3 AND id <> $4
 		ORDER BY taken_on
 		LIMIT 1`
 
-	prev, err := r.optionalReading(ctx, prevQ, meterID, day, excludeID)
+	prev, err := r.optionalReading(ctx, prevQ, meterID, zone, day, excludeID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("previous reading: %w", err)
 	}
-	next, err := r.optionalReading(ctx, nextQ, meterID, day, excludeID)
+	next, err := r.optionalReading(ctx, nextQ, meterID, zone, day, excludeID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("next reading: %w", err)
 	}
@@ -141,12 +141,12 @@ func (r *ReadingRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 func insertReading(ctx context.Context, tx pgx.Tx, rd Reading) (Reading, error) {
 	const q = `
-		INSERT INTO readings (id, meter_id, taken_on, value, is_initial)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO readings (id, meter_id, zone, taken_on, value, is_initial)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING ` + readingColumns
 
 	var out Reading
-	err := scanReading(tx.QueryRow(ctx, q, rd.ID, rd.MeterID, rd.TakenOn, rd.Value, rd.IsInitial), &out)
+	err := scanReading(tx.QueryRow(ctx, q, rd.ID, rd.MeterID, rd.Zone, rd.TakenOn, rd.Value, rd.IsInitial), &out)
 	if err != nil {
 		if mapped := readingWriteError(err); mapped != nil {
 			return Reading{}, mapped
@@ -196,18 +196,20 @@ func readingWriteError(err error) error {
 		return nil
 	}
 	switch pgErr.ConstraintName {
-	case "uq_readings_meter_day":
+	case "uq_readings_meter_day_zone":
 		return ErrReadingExists
 	case "uq_readings_initial":
-		return fmt.Errorf("%w: the meter already has an initial reading", ErrInvalidInput)
+		return fmt.Errorf("%w: the register already has an initial reading", ErrInvalidInput)
 	case "readings_meter_id_fkey":
 		return ErrMeterNotFound
 	case "readings_value_check":
 		return fmt.Errorf("%w: reading must not be negative", ErrInvalidInput)
+	case "readings_zone_check":
+		return fmt.Errorf("%w: unknown zone", ErrInvalidInput)
 	}
 	return nil
 }
 
 func scanReading(row pgx.Row, rd *Reading) error {
-	return row.Scan(&rd.ID, &rd.MeterID, &rd.TakenOn, &rd.Value, &rd.IsInitial, &rd.CreatedAt, &rd.UpdatedAt)
+	return row.Scan(&rd.ID, &rd.MeterID, &rd.Zone, &rd.TakenOn, &rd.Value, &rd.IsInitial, &rd.CreatedAt, &rd.UpdatedAt)
 }
