@@ -21,7 +21,7 @@ function ExpenseGroupForm({ onCreated }) {
         <form className="card" onSubmit={handleSubmit}>
             <h5 className="form-title">Add group</h5>
             {error && <div className="error">{error}</div>}
-            <div className="form-grid">
+            <div className="form-stack">
                 <div className="field">
                     <label>Name</label>
                     <input className="input" placeholder="Продукты" value={name} onChange={(e) => setName(e.target.value)} />

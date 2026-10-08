@@ -1626,13 +1626,30 @@ textarea:focus {
 }
 .rd-negative { font-weight: 700; color: #b42318; }
 
-/* meter serial with its register: "M-1042 day" */
-.rd-register {
+/* the provider's split of the billing month, under a day/night account */
+.rd-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 6px 4px;
+  padding: 10px 12px;
+  border: 1px dashed var(--color-accent-300);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-accent) 3%, transparent);
+  font-size: 13px;
+}
+.rd-split-field {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  gap: 6px;
+  color: var(--color-neutral-700);
 }
+.rd-split-field .input { width: 110px; }
+.rd-check { font-weight: 700; }
+.rd-split .rd-check { margin-left: auto; }
+.rd-check.ok { color: #2b8a3e; }
+.rd-check.bad { color: #c2410c; }
 
 .rd-form-foot {
   display: flex;
@@ -1675,7 +1692,7 @@ textarea:focus {
 .rd-tab:focus-visible { outline: 2px solid var(--color-accent-300); outline-offset: 2px; }
 
 /* date | for month | meter | consumption | actions;
-   a day/night meter: date | for month | day | night | day + | night + | total | actions */
+   a day/night account adds provider day | provider night | check */
 .rd-hist-row {
   display: grid;
   grid-template-columns: 130px 100px minmax(0, 1fr) minmax(0, 1fr) 110px;
@@ -1937,4 +1954,84 @@ textarea:focus {
   font-size: 12px;
   font-weight: 400;
   color: var(--color-neutral-700);
+}
+/* ============================================================
+   Form layouts: inline create forms, paired cards
+   ============================================================ */
+/* fields and the submit button in one row; set --fields on the element */
+.form-inline {
+  display: grid;
+  grid-template-columns: repeat(var(--fields, 4), minmax(0, 1fr)) auto;
+  gap: 16px;
+  align-items: end;
+}
+
+/* two cards side by side, same height */
+.card-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.card-pair > .card {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+}
+.card-pair + .card,
+.card + .card-pair { margin-top: 24px; }
+
+/* one field per line inside a card */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* fields side by side in equal columns */
+.form-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+/* buttons sink to the bottom so paired cards line up */
+.card-pair .form-actions { margin-top: auto; padding-top: 20px; }
+.form-actions.start { justify-content: flex-start; }
+
+/* ---- Settings: two currency selects in one row ---------------- */
+.settings-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.settings-pair .settings-field { max-width: none; margin-top: 0; }
+
+/* rate source card: Fetch now and Save right after the fields, statuses wrap */
+.card-pair .rate-source-actions { margin-top: 20px; padding-top: 0; flex-wrap: wrap; }
+
+/* backfill block fills the rest of the card; "Start backfill" moves
+   from the head down under the status, at the bottom of the card */
+.card-pair .backfill {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.card-pair .backfill-head { display: contents; }
+.card-pair .backfill-head > button {
+  order: 2;
+  margin-top: auto;
+  align-self: flex-start;
+}
+.card-pair .backfill-status { margin-top: 0; }
+.card-pair .backfill > .status-error,
+.card-pair .backfill > .status-ok,
+.card-pair .backfill > .error { margin: 0; }
+
+@media (max-width: 1100px) {
+  .form-inline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card-pair,
+  .settings-pair { grid-template-columns: minmax(0, 1fr); }
 }

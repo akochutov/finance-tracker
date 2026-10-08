@@ -71,19 +71,9 @@ function RateSourceCard({ source, providers, onChanged }) {
 
     return (
         <div className="card">
-            <div className="rate-source-head">
-                <h3 className="form-title">{label}</h3>
-                <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={handleFetchNow}
-                    disabled={fetching}
-                >
-                    {fetching ? "Fetching..." : "Fetch now"}
-                </button>
-            </div>
+            <h3 className="form-title">{label}</h3>
 
-            <div className="form-grid">
+            <div className="form-stack">
                 <div className="field">
                     <label>Source</label>
                     <select
@@ -102,14 +92,14 @@ function RateSourceCard({ source, providers, onChanged }) {
                     <input
                         type="number"
                         value={form.poll_interval_seconds}
-                        onChange={(e) => update("poll_interval_seconds", e.target.value)} 
+                        onChange={(e) => update("poll_interval_seconds", e.target.value)}
                     />
                     <span className="field-hint">{humanInterval(form.poll_interval_seconds)}</span>
                 </div>
 
                 <div className="field">
                     <label>Request timeout (seconds)</label>
-                    <input 
+                    <input
                         type="number"
                         value={form.request_timeout_seconds}
                         onChange={(e) => update("request_timeout_seconds", e.target.value)}
@@ -121,25 +111,36 @@ function RateSourceCard({ source, providers, onChanged }) {
                     <input
                         type="date"
                         value={form.backfill_start}
-                        onChange={(e) => update("backfill_start", e.target.value)} 
+                        onChange={(e) => update("backfill_start", e.target.value)}
                     />
+                </div>
+
+                <div className="field">
+                    <label>URL template</label>
+                    <input
+                        type="text"
+                        className="mono"
+                        value={form.url_template}
+                        onChange={(e) => update("url_template", e.target.value)}
+                    />
+                    <span className="field-hint">
+                        Placeholders: {"{base}"} {"{quote}"} {"{date}"}
+                    </span>
                 </div>
             </div>
 
-            <div className="field" style={{ marginTop: 16 }}>
-                <label>URL template</label>
-                <input
-                    type="text"
-                    className="mono"
-                    value={form.url_template}
-                    onChange={(e) => update("url_template", e.target.value)} 
-                />
-                <span className="field-hint">
-                    Placeholders: {"{base}"} {"{quote}"} {"{date}"}
-                </span>
-            </div>
-
-            <div className="form-actions">
+            <div className="form-actions start rate-source-actions">
+                <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleFetchNow}
+                    disabled={fetching}
+                >
+                    {fetching ? "Fetching..." : "Fetch now"}
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handleSave}>
+                    Save
+                </button>
                 {fetchMsg && (
                     <span className={fetchMsg.type === "ok" ? "status-ok" : "status-error"}>
                         {fetchMsg.text}
@@ -150,9 +151,6 @@ function RateSourceCard({ source, providers, onChanged }) {
                         {status.text}
                     </span>
                 )}
-                <button type="button" className="btn btn-primary" onClick={handleSave}>
-                    Save
-                </button>
             </div>
             <BackfillPanel kind={source.kind} />
         </div>
