@@ -26,7 +26,7 @@ function ExpenseCategoryForm({ groups, onCreated }) {
         <form className="card" onSubmit={handleSubmit}>
             <h5 className="form-title">Add category</h5>
             {error && <div className="error">{error}</div>}
-            <div className="form-grid">
+            <div className="form-row">
                 <div className="field">
                     <label>Group</label>
                     <select className="input" value={groupId} onChange={(e) => setGroupId(e.target.value)}>

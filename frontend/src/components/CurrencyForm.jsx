@@ -32,7 +32,7 @@ function CurrencyForm({ onCreated }) {
         <form className="card" onSubmit={handleSubmit}>
             <h5 className="form-title">Add currency</h5>
             {error && <div className="error">{error}</div>}
-            <div className="form-grid">
+            <div className="form-inline" style={{ "--fields": 4 }}>
                 <div className="field">
                     <label>Code</label>
                     <input

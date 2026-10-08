@@ -36,9 +36,9 @@ function ExchangeRateForm({ currencies, onCreated }) {
 
     return (
         <div className="card">
-            <h3 className="form-title">Add a rate</h3>
+            <h5 className="form-title">Add a rate</h5>
             <form onSubmit={handleSubmit}>
-                <div className="form-grid">
+                <div className="form-inline" style={{ "--fields": 3 }}>
                     <div className="field">
                         <label htmlFor="er-currency">Currency</label>
                         <select 
@@ -73,12 +73,10 @@ function ExchangeRateForm({ currencies, onCreated }) {
                             inputMode="decimal"
                             placeholder="0.00274"
                             value={rate}
-                            onChange={(e) => setRate(e.target.value)} 
+                            onChange={(e) => setRate(e.target.value)}
                         />
                     </div>
-                </div>
 
-                <div className="form-actions">
                     <button type="submit" className="btn btn-primary">Save rate</button>
                 </div>
             </form>

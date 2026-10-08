@@ -41,40 +41,42 @@ function SettingsPage() {
         <div className="page">
             <h1>Settings</h1>
 
-            <div className="settings-field">
-                <label htmlFor="base-currency">Income dashboard currency</label>
-                <select
-                    id="base-currency"
-                    value={baseCurrency}
-                    onChange={(e) => changeCurrency(e.target.value, baseCurrency, setBaseCurrency, updateSettings, "Income dashboard currency")}
-                >
-                    {fiatCurrencies.map((c) => (
-                        <option key={c.code} value={c.code}>
-                            {c.code} - {c.name}
-                        </option>
-                    ))}
-                </select>
-                <p className="settings-hint">
-                    The income dashboard converts to this currency. Existing records are never changed.
-                </p>
-            </div>
+            <div className="settings-pair">
+                <div className="settings-field">
+                    <label htmlFor="base-currency">Income dashboard currency</label>
+                    <select
+                        id="base-currency"
+                        value={baseCurrency}
+                        onChange={(e) => changeCurrency(e.target.value, baseCurrency, setBaseCurrency, updateSettings, "Income dashboard currency")}
+                    >
+                        {fiatCurrencies.map((c) => (
+                            <option key={c.code} value={c.code}>
+                                {c.code} - {c.name}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="settings-hint">
+                        The income dashboard converts to this currency. Existing records are never changed.
+                    </p>
+                </div>
 
-            <div className="settings-field">
-                <label htmlFor="expense-currency">Expenses dashboard currency</label>
-                <select
-                    id="expense-currency"
-                    value={expenseCurrency}
-                    onChange={(e) => changeCurrency(e.target.value, expenseCurrency, setExpenseCurrency, updateExpenseBaseCurrency, "Expenses dashboard currency")}
-                >
-                    {fiatCurrencies.map((c) => (
-                        <option key={c.code} value={c.code}>
-                            {c.code} - {c.name}
-                        </option>
-                    ))}
-                </select>
-                <p className="settings-hint">
-                    The expenses dashboard converts to this currency. Until you choose one, it follows the income currency.
-                </p>
+                <div className="settings-field">
+                    <label htmlFor="expense-currency">Expenses dashboard currency</label>
+                    <select
+                        id="expense-currency"
+                        value={expenseCurrency}
+                        onChange={(e) => changeCurrency(e.target.value, expenseCurrency, setExpenseCurrency, updateExpenseBaseCurrency, "Expenses dashboard currency")}
+                    >
+                        {fiatCurrencies.map((c) => (
+                            <option key={c.code} value={c.code}>
+                                {c.code} - {c.name}
+                            </option>
+                        ))}
+                    </select>
+                    <p className="settings-hint">
+                        The expenses dashboard converts to this currency. Until you choose one, it follows the income currency.
+                    </p>
+                </div>
             </div>
 
             {status && (

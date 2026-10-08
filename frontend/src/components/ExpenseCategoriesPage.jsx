@@ -61,8 +61,10 @@ function ExpenseCategoriesPage() {
                 <p>Groups and their categories used to classify expenses.</p>
             </div>
             {error && <div className="error">{error}</div>}
-            <ExpenseGroupForm onCreated={loadGroups} />
-            <ExpenseCategoryForm groups={activeGroups} onCreated={loadGroups} />
+            <div className="card-pair">
+                <ExpenseGroupForm onCreated={loadGroups} />
+                <ExpenseCategoryForm groups={activeGroups} onCreated={loadGroups} />
+            </div>
             <div className="list-header">
                 <h5>All groups</h5>
                 <span className="row-meta">{groups.length} groups, {categoryCount} categories</span>

@@ -24,14 +24,16 @@ function RateSourceSettings() {
         <div className="section">
             <h3>Rate sources</h3>
             {error && <div className="error">{error}</div>}
-            {sources.map((s) => (
-                <RateSourceCard
-                    key={s.kind}
-                    source={s}
-                    providers={providers}
-                    onChanged={load}
-                />
-            ))}
+            <div className="card-pair">
+                {sources.map((s) => (
+                    <RateSourceCard
+                        key={s.kind}
+                        source={s}
+                        providers={providers}
+                        onChanged={load}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

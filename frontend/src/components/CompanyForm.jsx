@@ -32,7 +32,7 @@ function CompanyForm({ onCreated }) {
         <form className="card" onSubmit={handleSubmit}>
             <h5 className="form-title">Add company</h5>
             {error && <div className="error">{error}</div>}
-            <div className="form-grid">
+            <div className="form-inline" style={{ "--fields": 4 }}>
                 <div className="field">
                     <label>Name</label>
                     <input className="input" placeholder="Nitka Inc." value={name} onChange={(e) => setName(e.target.value)} />
@@ -49,8 +49,6 @@ function CompanyForm({ onCreated }) {
                     <label>Note</label>
                     <input className="input" placeholder="Optional" value={note} onChange={(e) => setNote(e.target.value)} />
                 </div>
-            </div>
-            <div className="form-actions">
                 <button type="submit" className="btn btn-primary">Create</button>
             </div>
         </form>
