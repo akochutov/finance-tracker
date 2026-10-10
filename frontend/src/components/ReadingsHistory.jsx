@@ -3,15 +3,23 @@ import { getReadings, updateReading, deleteReading } from "../api/client";
 import { formatISODate } from "./expenseUtils";
 import { isDayNight, zonesOf, zoneLabel, meterTitle, groupByDate, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
 
-function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect, reloadKey, onChanged }) {
+function ReadingsHistory({ meters, accounts, addresses, serviceTypes, selectedId, onSelect, reloadKey, onChanged }) {
     const [readings, setReadings] = useState([]);
     const [localKey, setLocalKey] = useState(0);
     const [error, setError] = useState(null);
     const [editRow, setEditRow] = useState(null);
     const [showRemoved, setShowRemoved] = useState(false);
 
-    const active = meters.filter((m) => !m.removed_on);
-    const removed = meters.filter((m) => m.removed_on);
+    function outOfUse(m) {
+        if (m.removed_on) return true;
+        const acc = accounts.find((a) => a.id === m.account_id);
+        if (!acc || !acc.is_active) return true;
+        const addr = addresses.find((a) => a.id === acc.address_id);
+        return !addr || !addr.is_active;
+    }
+
+    const active = meters.filter((m) => !outOfUse(m));
+    const removed = meters.filter(outOfUse);
     const meter = meters.find((m) => m.id === selectedId) || active[0] || meters[0] || null;
 
     useEffect(() => {
@@ -81,7 +89,7 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
     }
 
     const rowClass = dayNight ? "rd-hist-row day-night" : "rd-hist-row";
-    const tabs = showRemoved || meter.removed_on ? [...active, ...removed] : active;
+    const tabs = showRemoved || outOfUse(meter) ? [...active, ...removed] : active;
 
     function deltaCell(value, key) {
         return (
@@ -101,16 +109,16 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
                         const t = acc ? serviceTypes.find((x) => x.code === acc.service) : null;
                         const classes = ["rd-tab"];
                         if (m.id === meter.id) classes.push("active");
-                        if (m.removed_on) classes.push("removed");
+                        if (outOfUse(m)) classes.push("removed");
                         return (
                             <button key={m.id} type="button" className={classes.join(" ")} onClick={() => onSelect(m.id)}>
                                 {meterTitle(m)} · {t ? t.name.toLowerCase() : ""}
                             </button>
                         );
                     })}
-                    {removed.length > 0 && !meter.removed_on && (
+                    {removed.length > 0 && !outOfUse(meter) && (
                         <button type="button" className="mt-link" onClick={() => setShowRemoved(!showRemoved)}>
-                            {showRemoved ? "hide removed" : `show removed (${removed.length})`}
+                            {showRemoved ? "hide inactive" : `show inactive (${removed.length})`}
                         </button>
                     )}
                 </div>
