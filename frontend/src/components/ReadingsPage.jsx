@@ -169,6 +169,7 @@ function ReadingsPage() {
                     <ReadingsHistory
                         meters={meters}
                         accounts={accounts}
+                        addresses={addresses}
                         serviceTypes={serviceTypes}
                         selectedId={selectedId}
                         onSelect={(id) => setSearchParams({ meter: id })}
