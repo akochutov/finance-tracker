@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatISODate, todayISO } from "./expenseUtils";
-import { isDayNight, zonesOf, zoneLabel, REGISTERS_SINGLE, REGISTERS_DAY_NIGHT } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, meterTitle, REGISTERS_SINGLE, REGISTERS_DAY_NIGHT } from "./meterUtils";
 
 function PaymentCategorySelect({ groups, value, onChange }) {
     return (
@@ -170,6 +170,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
     const [categoryId, setCategoryId] = useState(account.expense_category_id || "");
     const [adding, setAdding] = useState(false);
     const [serial, setSerial] = useState("");
+    const [name, setName] = useState("");
     const [installedOn, setInstalledOn] = useState(todayISO());
     const [registers, setRegisters] = useState(REGISTERS_SINGLE);
     const [initialValues, setInitialValues] = useState({});
@@ -199,6 +200,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
         const ok = await actions.createMeter({
             account_id: account.id,
             serial,
+            name,
             registers,
             installed_on: installedOn,
             removed_on: null,
@@ -208,6 +210,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
         if (ok) {
             setAdding(false);
             setSerial("");
+            setName("");
             setRegisters(REGISTERS_SINGLE);
             setInitialValues({});
             setInitialOn("");
@@ -257,7 +260,7 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
                     if (m.removed_on) classes.push("removed");
                     return (
                         <button type="button" key={m.id} className={classes.join(" ")} onClick={() => onSelect(m.id)}>
-                            <span className="mono">{m.serial}</span>
+                            <span className={m.name ? "" : "mono"}>{meterTitle(m)}</span>
                             {isDayNight(m) && <span className="mt-zone-badge dual">day/night</span>}
                             <span className="mt-since">
                                 {m.removed_on
@@ -271,6 +274,10 @@ function AccountNode({ account, serviceType, groups, meters, selectedId, onSelec
 
             {adding && (
                 <form className="mt-meter-form" onSubmit={addMeter}>
+                    <div className="field">
+                        <label>Name</label>
+                        <input className="input" placeholder="Optional, e.g. Д12-39-Ванна" value={name} onChange={(e) => setName(e.target.value)} />
+                    </div>
                     <div className="field">
                         <label>Serial</label>
                         <input className="input" value={serial} onChange={(e) => setSerial(e.target.value)} />

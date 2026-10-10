@@ -5,7 +5,7 @@ import {
     createReadings,
 } from "../api/client";
 import { todayISO, formatISODate } from "./expenseUtils";
-import { zonesOf, zoneLabel, registerKey, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
+import { zonesOf, zoneLabel, meterTitle, registerKey, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
 import ReadingsHistory from "./ReadingsHistory";
 
 function ReadingsPage() {
@@ -80,7 +80,7 @@ function ReadingsPage() {
             const filled = zones.filter((z) => (values[registerKey(m.id, z)] ?? "") !== "");
             if (filled.length === 0) continue;
             if (filled.length < zones.length) {
-                incomplete.push(m.serial);
+                incomplete.push(meterTitle(m));
                 continue;
             }
             for (const z of zones) {
@@ -199,7 +199,7 @@ function AccountRound({ group, values, latestBy, consumptionOf, onValue }) {
                     return (
                         <div key={key} className="rd-round-row">
                             <span className="rd-register">
-                                <span className="mono">{m.serial}</span>
+                                <span className={m.name ? "" : "mono"}>{meterTitle(m)}</span>
                                 {zoneLabel(z) && <span className="mt-zone-badge dual">{zoneLabel(z).toLowerCase()}</span>}
                             </span>
                             <span className="num mono row-meta">

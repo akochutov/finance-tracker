@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { getReadings, updateReading, deleteReading } from "../api/client";
 import { formatISODate } from "./expenseUtils";
-import { isDayNight, zonesOf, zoneLabel, groupByDate, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, meterTitle, groupByDate, billingMonthKey, monthLabel, formatReading } from "./meterUtils";
 
 function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect, reloadKey, onChanged }) {
     const [readings, setReadings] = useState([]);
     const [localKey, setLocalKey] = useState(0);
     const [error, setError] = useState(null);
     const [editRow, setEditRow] = useState(null);
+    const [showRemoved, setShowRemoved] = useState(false);
 
-    const meter = meters.find((m) => m.id === selectedId) || meters[0] || null;
+    const active = meters.filter((m) => !m.removed_on);
+    const removed = meters.filter((m) => m.removed_on);
+    const meter = meters.find((m) => m.id === selectedId) || active[0] || meters[0] || null;
 
     useEffect(() => {
         if (!meter) return;
@@ -78,7 +81,7 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
     }
 
     const rowClass = dayNight ? "rd-hist-row day-night" : "rd-hist-row";
-    const tabs = [...meters].sort((a, b) => Number(Boolean(a.removed_on)) - Number(Boolean(b.removed_on)));
+    const tabs = showRemoved || meter.removed_on ? [...active, ...removed] : active;
 
     function deltaCell(value, key) {
         return (
@@ -101,10 +104,15 @@ function ReadingsHistory({ meters, accounts, serviceTypes, selectedId, onSelect,
                         if (m.removed_on) classes.push("removed");
                         return (
                             <button key={m.id} type="button" className={classes.join(" ")} onClick={() => onSelect(m.id)}>
-                                {m.serial} · {t ? t.name.toLowerCase() : ""}
+                                {meterTitle(m)} · {t ? t.name.toLowerCase() : ""}
                             </button>
                         );
                     })}
+                    {removed.length > 0 && !meter.removed_on && (
+                        <button type="button" className="mt-link" onClick={() => setShowRemoved(!showRemoved)}>
+                            {showRemoved ? "hide removed" : `show removed (${removed.length})`}
+                        </button>
+                    )}
                 </div>
             </div>
 

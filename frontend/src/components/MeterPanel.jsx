@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getReadings } from "../api/client";
 import { formatISODate } from "./expenseUtils";
-import { isDayNight, zonesOf, zoneLabel, groupByDate, formatReading } from "./meterUtils";
+import { isDayNight, zonesOf, zoneLabel, groupByDate, formatReading, meterTitle } from "./meterUtils";
 
 function MeterPanel({ meter, account, serviceType, actions }) {
     const unit = serviceType ? serviceType.unit : "";
@@ -10,6 +10,7 @@ function MeterPanel({ meter, account, serviceType, actions }) {
     const [readings, setReadings] = useState([]);
     const [editing, setEditing] = useState(false);
     const [serial, setSerial] = useState(meter.serial);
+    const [name, setName] = useState(meter.name || "");
     const [installedOn, setInstalledOn] = useState(meter.installed_on.slice(0, 10));
     const [removedOn, setRemovedOn] = useState(meter.removed_on ? meter.removed_on.slice(0, 10) : "");
 
@@ -27,18 +28,27 @@ function MeterPanel({ meter, account, serviceType, actions }) {
         };
     }, [meter.id, meter.updated_at]);
 
+    function startEdit() {
+        setSerial(meter.serial);
+        setName(meter.name || "");
+        setInstalledOn(meter.installed_on.slice(0, 10));
+        setRemovedOn(meter.removed_on ? meter.removed_on.slice(0, 10) : "");
+        setEditing(true);
+    }
+
     async function saveMeter(e) {
         e.preventDefault();
         const ok = await actions.updateMeter(meter.id, {
             serial,
+            name,
             installed_on: installedOn,
             removed_on: removedOn || null,
         });
         if (ok) setEditing(false);
     }
 
-    async function removeMeter() {
-        if (window.confirm(`Delete meter ${meter.serial} with all its readings? This cannot be undone.`)) {
+    async function deleteMeter() {
+        if (window.confirm(`Delete meter ${meterTitle(meter)} with all its readings? This cannot be undone.`)) {
             await actions.deleteMeter(meter.id);
         }
     }
@@ -66,8 +76,9 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                     <div className="mt-caption">
                         {serviceType ? serviceType.name : account.service} · account {account.number}
                     </div>
-                    <div className="mt-title">Meter <span className="mono">{meter.serial}</span></div>
+                    <div className="mt-title">{meter.name ? meter.name : <>Meter <span className="mono">{meter.serial}</span></>}</div>
                     <div className="mt-pills">
+                        {meter.name && <span className="mt-pill mono">S/N {meter.serial}</span>}
                         <span className="mt-pill accent">{isDayNight(meter) ? "Day / night registers" : "Single register"}</span>
                         <span className="mt-pill">Installed {formatISODate(meter.installed_on)}</span>
                         {meter.removed_on && <span className="mt-pill">Removed {formatISODate(meter.removed_on)}</span>}
@@ -76,8 +87,8 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                 </div>
                 {!editing && (
                     <div className="mt-actions">
-                        <button className="btn btn-secondary btn-sm" onClick={() => setEditing(true)}>Edit</button>
-                        <button className="btn btn-ghost btn-sm" onClick={removeMeter}>Delete</button>
+                        <button className="btn btn-secondary btn-sm" onClick={startEdit}>Edit</button>
+                        <button className="btn btn-ghost btn-sm" onClick={deleteMeter}>Delete</button>
                     </div>
                 )}
             </div>
@@ -86,6 +97,10 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                 <form className="mt-section" onSubmit={saveMeter}>
                     <div className="mt-section-title">Edit meter</div>
                     <div className="mt-reading-form">
+                        <div className="field">
+                            <label>Name</label>
+                            <input className="input" placeholder="Optional" value={name} onChange={(e) => setName(e.target.value)} />
+                        </div>
                         <div className="field">
                             <label>Serial</label>
                             <input className="input" value={serial} onChange={(e) => setSerial(e.target.value)} />
@@ -101,7 +116,10 @@ function MeterPanel({ meter, account, serviceType, actions }) {
                         <button type="submit" className="btn btn-primary btn-sm">Save</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(false)}>Cancel</button>
                     </div>
-                    <div className="mt-hint">Leave “Removed” empty while the meter is in place. All readings, the initial one included, must stay within these dates.</div>
+                    <div className="mt-hint">
+                        The name is shown instead of the serial everywhere. Leave “Removed” empty while the meter is in place;
+                        clear it to put a removed meter back. All readings, the initial one included, must stay within these dates.
+                    </div>
                 </form>
             )}
 

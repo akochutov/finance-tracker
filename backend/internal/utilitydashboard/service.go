@@ -169,15 +169,26 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	blocks := make([]ServiceBlock, 0)
 	for _, svc := range services {
 		var accs []AccountRow
-		meterCount := 0
 		for _, a := range accounts {
 			if a.Service == svc.Code {
 				accs = append(accs, a)
-				meterCount += len(metersOf[a.ID])
 			}
 		}
 		if len(accs) == 0 {
 			continue
+		}
+
+		first := len(months) - chartMonths
+		shown := 0
+		for _, a := range accs {
+			for _, m := range metersOf[a.ID] {
+				for _, z := range utility.ZonesOf(m.Registers) {
+					if anyValue(perRegister[registerKey{m.ID, z}], first) {
+						shown++
+						break
+					}
+				}
+			}
 		}
 
 		var series []seriesData
@@ -188,7 +199,7 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 					if z != utility.ZoneSingle {
 						dayNight = true
 					}
-					sr, err := s.registerSeries(ctx, svc, m, z, meterCount > 1, months,
+					sr, err := s.registerSeries(ctx, svc, m, z, shown > 1, months,
 						perRegister[registerKey{m.ID, z}], accountVolume[a.ID], prices, conv, cov, inPeriod)
 					if err != nil {
 						return Dashboard{}, err
@@ -265,7 +276,6 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 			return sum
 		}
 
-		first := len(months) - chartMonths
 		out := ServiceBlock{
 			Service:   svc.Code,
 			Name:      svc.Name,
@@ -277,6 +287,9 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 			Paid:      paid[first:],
 		}
 		for _, sr := range series {
+			if !anyValue(sr.consumption, first) {
+				continue
+			}
 			out.Series = append(out.Series, Series{
 				Key:         sr.key,
 				Label:       sr.label,
@@ -304,12 +317,12 @@ func (s *Service) Get(ctx context.Context, from, to time.Time) (Dashboard, error
 	}, nil
 }
 
-func (s *Service) registerSeries(ctx context.Context, svc ServiceRow, m MeterRow, zone string, withSerial bool, months []time.Time,
+func (s *Service) registerSeries(ctx context.Context, svc ServiceRow, m MeterRow, zone string, withTitle bool, months []time.Time,
 	consumption, accountVolume []*decimal.Decimal, prices *priceBook, conv *converter, cov *coverage, inPeriod func(int) bool) (seriesData, error) {
 
 	sr := seriesData{
 		key:         m.ID.String() + ":" + zone,
-		label:       registerLabel(m.Serial, zone, withSerial),
+		label:       registerLabel(m.Title(), zone, withTitle),
 		kind:        KindMeter,
 		zone:        zone,
 		consumption: make([]*decimal.Decimal, len(months)),
@@ -340,19 +353,28 @@ func (s *Service) registerSeries(ctx context.Context, svc ServiceRow, m MeterRow
 	return sr, nil
 }
 
-func registerLabel(serial, zone string, withSerial bool) string {
+func anyValue(values []*decimal.Decimal, from int) bool {
+	for k := from; k < len(values); k++ {
+		if values[k] != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func registerLabel(title, zone string, withTitle bool) string {
 	switch zone {
 	case utility.ZoneDay, utility.ZoneNight:
 		label := "Day"
 		if zone == utility.ZoneNight {
 			label = "Night"
 		}
-		if withSerial {
-			label += " · " + serial
+		if withTitle {
+			label += " · " + title
 		}
 		return label
 	default:
-		return serial
+		return title
 	}
 }
 
