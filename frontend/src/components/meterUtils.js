@@ -5,6 +5,10 @@ export const ZONE_SINGLE = "single";
 export const ZONE_DAY = "day";
 export const ZONE_NIGHT = "night";
 
+export function meterTitle(meter) {
+    return (meter && meter.name) || (meter ? meter.serial : "");
+}
+
 export function isDayNight(meter) {
     return Boolean(meter) && meter.registers === REGISTERS_DAY_NIGHT;
 }

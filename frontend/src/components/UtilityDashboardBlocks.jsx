@@ -223,10 +223,17 @@ export function EstimatedVsPaid({ services, selected, onSelect, months, inPeriod
     );
 }
 
+function monthlyConsumption(block, i) {
+    let sum = null;
+    for (const s of block.series) {
+        const v = s.consumption[i];
+        if (v === null || v === undefined) continue;
+        sum = (sum ?? 0) + Number(v);
+    }
+    return sum;
+}
+
 export function MonthTable({ services, months, inPeriod }) {
-    const columns = services.flatMap((s) =>
-        s.series.map((sr) => ({ service: s, series: sr, title: `${s.name} · ${sr.label}` }))
-    );
     const rows = months.map((m, i) => ({ m, i })).reverse();
 
     return (
@@ -240,8 +247,8 @@ export function MonthTable({ services, months, inPeriod }) {
                     <thead>
                         <tr>
                             <th>Month</th>
-                            {columns.map((c) => (
-                                <th key={c.series.key} className="num">{c.title}</th>
+                            {services.map((s) => (
+                                <th key={s.service} className="num">{s.name}</th>
                             ))}
                         </tr>
                     </thead>
@@ -249,12 +256,12 @@ export function MonthTable({ services, months, inPeriod }) {
                         {rows.map(({ m, i }) => (
                             <tr key={m} className={inPeriod(m) ? "current" : ""}>
                                 <td>{monthShort(m, true)}</td>
-                                {columns.map((c) => {
-                                    const q = c.series.consumption[i];
-                                    const cost = c.series.cost[i];
+                                {services.map((s) => {
+                                    const q = monthlyConsumption(s, i);
+                                    const cost = s.estimated[i];
                                     return (
-                                        <td key={c.series.key} className="num mono">
-                                            {q === null ? "—" : `${formatQty(q)} ${c.service.unit}`}
+                                        <td key={s.service} className="num mono">
+                                            {q === null ? "—" : `${formatQty(q)} ${s.unit}`}
                                             {q !== null && (
                                                 <span className="ud-cost">{cost === null ? "no cost" : formatWhole(cost)}</span>
                                             )}

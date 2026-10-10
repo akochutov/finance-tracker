@@ -54,6 +54,7 @@ type updateUtilityAccountRequest struct {
 type createMeterRequest struct {
 	AccountID     uuid.UUID                  `json:"account_id"`
 	Serial        string                     `json:"serial"`
+	Name          string                     `json:"name"`
 	Registers     string                     `json:"registers"`
 	InstalledOn   string                     `json:"installed_on"`
 	RemovedOn     *string                    `json:"removed_on"`
@@ -63,6 +64,7 @@ type createMeterRequest struct {
 
 type updateMeterRequest struct {
 	Serial      string  `json:"serial"`
+	Name        string  `json:"name"`
 	InstalledOn string  `json:"installed_on"`
 	RemovedOn   *string `json:"removed_on"`
 }
@@ -344,7 +346,7 @@ func (s *Server) handleCreateMeter() http.HandlerFunc {
 			initialDay = *initialOn
 		}
 
-		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, req.Registers, installedOn, removedOn, initialDay, req.InitialValues)
+		created, err := s.utilities.CreateMeter(r.Context(), req.AccountID, req.Serial, req.Name, req.Registers, installedOn, removedOn, initialDay, req.InitialValues)
 		if err != nil {
 			writeUtilityError(w, err, "create meter")
 			return
@@ -376,7 +378,7 @@ func (s *Server) handleUpdateMeter() http.HandlerFunc {
 			return
 		}
 
-		updated, err := s.utilities.UpdateMeter(r.Context(), id, req.Serial, installedOn, removedOn)
+		updated, err := s.utilities.UpdateMeter(r.Context(), id, req.Serial, req.Name, installedOn, removedOn)
 		if err != nil {
 			writeUtilityError(w, err, "update meter")
 			return

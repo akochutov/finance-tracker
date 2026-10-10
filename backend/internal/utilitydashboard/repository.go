@@ -28,7 +28,15 @@ type MeterRow struct {
 	ID        uuid.UUID
 	AccountID uuid.UUID
 	Serial    string
+	Name      string
 	Registers string
+}
+
+func (m MeterRow) Title() string {
+	if m.Name != "" {
+		return m.Name
+	}
+	return m.Serial
 }
 
 type ReadingRow struct {
@@ -76,12 +84,12 @@ func (r *Repository) Accounts(ctx context.Context) ([]AccountRow, error) {
 
 func (r *Repository) Meters(ctx context.Context) ([]MeterRow, error) {
 	const q = `
-		SELECT id, account_id, serial, registers
+		SELECT id, account_id, serial, name, registers
 		FROM meters
 		ORDER BY account_id, installed_on, serial`
 	return collect(ctx, r.db, q, nil, func(row pgx.Rows) (MeterRow, error) {
 		var m MeterRow
-		err := row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Registers)
+		err := row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Name, &m.Registers)
 		return m, err
 	})
 }

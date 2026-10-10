@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const meterColumns = "id, account_id, serial, registers, installed_on, removed_on, created_at, updated_at"
+const meterColumns = "id, account_id, serial, name, registers, installed_on, removed_on, created_at, updated_at"
 
 type MeterRepository struct {
 	db *pgxpool.Pool
@@ -30,13 +30,13 @@ func (r *MeterRepository) Create(ctx context.Context, meter Meter, initial []Rea
 	defer tx.Rollback(ctx)
 
 	const q = `
-		INSERT INTO meters (id, account_id, serial, registers, installed_on, removed_on)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO meters (id, account_id, serial, name, registers, installed_on, removed_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING ` + meterColumns
 
 	var out Meter
 	err = scanMeter(tx.QueryRow(ctx, q,
-		meter.ID, meter.AccountID, meter.Serial, meter.Registers, meter.InstalledOn, meter.RemovedOn,
+		meter.ID, meter.AccountID, meter.Serial, meter.Name, meter.Registers, meter.InstalledOn, meter.RemovedOn,
 	), &out)
 	if err != nil {
 		if mapped := meterWriteError(err); mapped != nil {
@@ -97,15 +97,15 @@ func (r *MeterRepository) List(ctx context.Context) ([]Meter, error) {
 	return meters, nil
 }
 
-func (r *MeterRepository) Update(ctx context.Context, id uuid.UUID, serial string, installedOn time.Time, removedOn *time.Time) (Meter, error) {
+func (r *MeterRepository) Update(ctx context.Context, id uuid.UUID, serial, name string, installedOn time.Time, removedOn *time.Time) (Meter, error) {
 	const q = `
 		UPDATE meters
-		SET serial = $1, installed_on = $2, removed_on = $3
-		WHERE id = $4
+		SET serial = $1, name = $2, installed_on = $3, removed_on = $4
+		WHERE id = $5
 		RETURNING ` + meterColumns
 
 	var out Meter
-	err := scanMeter(r.db.QueryRow(ctx, q, serial, installedOn, removedOn, id), &out)
+	err := scanMeter(r.db.QueryRow(ctx, q, serial, name, installedOn, removedOn, id), &out)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Meter{}, ErrMeterNotFound
@@ -150,5 +150,5 @@ func meterWriteError(err error) error {
 }
 
 func scanMeter(row pgx.Row, m *Meter) error {
-	return row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Registers, &m.InstalledOn, &m.RemovedOn, &m.CreatedAt, &m.UpdatedAt)
+	return row.Scan(&m.ID, &m.AccountID, &m.Serial, &m.Name, &m.Registers, &m.InstalledOn, &m.RemovedOn, &m.CreatedAt, &m.UpdatedAt)
 }

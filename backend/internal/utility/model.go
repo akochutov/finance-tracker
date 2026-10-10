@@ -47,6 +47,7 @@ type Meter struct {
 	ID          uuid.UUID  `json:"id"`
 	AccountID   uuid.UUID  `json:"account_id"`
 	Serial      string     `json:"serial"`
+	Name        string     `json:"name"`
 	Registers   string     `json:"registers"`
 	InstalledOn time.Time  `json:"installed_on"`
 	RemovedOn   *time.Time `json:"removed_on"`
@@ -63,6 +64,13 @@ type Reading struct {
 	IsInitial bool            `json:"is_initial"`
 	CreatedAt time.Time       `json:"created_at"`
 	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+func (m Meter) Title() string {
+	if m.Name != "" {
+		return m.Name
+	}
+	return m.Serial
 }
 
 func ZonesOf(registers string) []string {

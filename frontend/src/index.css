@@ -1669,7 +1669,7 @@ textarea:focus {
   margin-bottom: 14px;
 }
 .rd-hist-head .mt-section-title { margin-bottom: 0; }
-.rd-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rd-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .rd-tab {
   height: 30px;
   padding: 0 12px;

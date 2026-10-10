@@ -145,8 +145,9 @@ func (s *Service) SetAccountActive(ctx context.Context, id uuid.UUID, active boo
 	return s.accounts.SetActive(ctx, id, active)
 }
 
-func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial, registers string, installedOn time.Time, removedOn *time.Time, initialOn time.Time, initialValues map[string]decimal.Decimal) (Meter, error) {
+func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial, name, registers string, installedOn time.Time, removedOn *time.Time, initialOn time.Time, initialValues map[string]decimal.Decimal) (Meter, error) {
 	serial = strings.TrimSpace(serial)
+	name = strings.TrimSpace(name)
 	installedOn, removedOn, err := normalizeMeter(serial, installedOn, removedOn)
 	if err != nil {
 		return Meter{}, err
@@ -181,7 +182,7 @@ func (s *Service) CreateMeter(ctx context.Context, accountID uuid.UUID, serial, 
 		return Meter{}, ErrAccountInactive
 	}
 
-	meter := Meter{AccountID: accountID, Serial: serial, Registers: registers, InstalledOn: installedOn, RemovedOn: removedOn}
+	meter := Meter{AccountID: accountID, Serial: serial, Name: name, Registers: registers, InstalledOn: installedOn, RemovedOn: removedOn}
 	if err := checkInService(meter, initialOn); err != nil {
 		return Meter{}, err
 	}
@@ -212,8 +213,9 @@ func (s *Service) ListMeters(ctx context.Context) ([]Meter, error) {
 	return s.meters.List(ctx)
 }
 
-func (s *Service) UpdateMeter(ctx context.Context, id uuid.UUID, serial string, installedOn time.Time, removedOn *time.Time) (Meter, error) {
+func (s *Service) UpdateMeter(ctx context.Context, id uuid.UUID, serial, name string, installedOn time.Time, removedOn *time.Time) (Meter, error) {
 	serial = strings.TrimSpace(serial)
+	name = strings.TrimSpace(name)
 	installedOn, removedOn, err := normalizeMeter(serial, installedOn, removedOn)
 	if err != nil {
 		return Meter{}, err
@@ -234,7 +236,7 @@ func (s *Service) UpdateMeter(ctx context.Context, id uuid.UUID, serial string, 
 		}
 	}
 
-	return s.meters.Update(ctx, id, serial, installedOn, removedOn)
+	return s.meters.Update(ctx, id, serial, name, installedOn, removedOn)
 }
 
 func (s *Service) DeleteMeter(ctx context.Context, id uuid.UUID) error {
@@ -257,17 +259,17 @@ func (s *Service) CreateReadings(ctx context.Context, takenOn time.Time, values 
 			return nil, err
 		}
 		if err := checkInService(meter, takenOn); err != nil {
-			return nil, fmt.Errorf("meter %s: %w", meter.Serial, err)
+			return nil, fmt.Errorf("meter %s: %w", meter.Title(), err)
 		}
 
 		zones := ZonesOf(meter.Registers)
 		if len(byZone) != len(zones) {
-			return nil, fmt.Errorf("%w: meter %s: expected values for %s", ErrInvalidInput, meter.Serial, strings.Join(zones, ", "))
+			return nil, fmt.Errorf("%w: meter %s: expected values for %s", ErrInvalidInput, meter.Title(), strings.Join(zones, ", "))
 		}
 		for _, z := range zones {
 			value, ok := byZone[z]
 			if !ok {
-				return nil, fmt.Errorf("%w: meter %s: missing value for %s", ErrInvalidInput, meter.Serial, z)
+				return nil, fmt.Errorf("%w: meter %s: missing value for %s", ErrInvalidInput, meter.Title(), z)
 			}
 			if err := s.checkMonotonic(ctx, meter, z, takenOn, value, uuid.Nil, false); err != nil {
 				return nil, err
@@ -341,7 +343,7 @@ func (s *Service) readingOfMeter(ctx context.Context, meterID, readingID uuid.UU
 }
 
 func (s *Service) checkMonotonic(ctx context.Context, meter Meter, zone string, day time.Time, value decimal.Decimal, excludeID uuid.UUID, isInitial bool) error {
-	name := meter.Serial
+	name := meter.Title()
 	if zone != ZoneSingle {
 		name += " " + zone
 	}

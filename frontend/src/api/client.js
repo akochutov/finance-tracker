@@ -392,7 +392,7 @@ export async function getMeters() {
     return data.meters;
 }
 
-// meter: { account_id, serial, registers: "single" | "day_night", installed_on, removed_on,
+// meter: { account_id, serial, name, registers: "single" | "day_night", installed_on, removed_on,
 //         initial_on, initial_values: { single: "…" } or { day: "…", night: "…" } }
 export async function createMeter(meter) {
     return request("/api/meters", {
@@ -401,7 +401,7 @@ export async function createMeter(meter) {
     });
 }
 
-// fields: { serial, installed_on, removed_on }
+// fields: { serial, name, installed_on, removed_on }; removed_on takes the meter out of the round
 export async function updateMeter(id, fields) {
     return request(`/api/meters/${id}`, {
         method: "PUT",
